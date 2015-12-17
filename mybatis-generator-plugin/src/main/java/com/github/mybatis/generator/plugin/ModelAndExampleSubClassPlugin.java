@@ -1,4 +1,4 @@
-package org.github.mybatis.generator.plugin;
+package com.github.mybatis.generator.plugin;
 
 import java.io.File;
 import java.util.ArrayList;

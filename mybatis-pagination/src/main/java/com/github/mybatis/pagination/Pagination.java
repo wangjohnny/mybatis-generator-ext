@@ -1,4 +1,4 @@
-package org.github.mybatis.pagination;
+package com.github.mybatis.pagination;
 
 import java.util.List;
 

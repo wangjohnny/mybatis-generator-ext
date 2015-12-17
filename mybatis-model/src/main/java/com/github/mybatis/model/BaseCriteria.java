@@ -1,4 +1,4 @@
-package org.github.mybatis.model;
+package com.github.mybatis.model;
 
 import java.util.ArrayList;
 import java.util.List;

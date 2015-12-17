@@ -1,6 +1,6 @@
-package org.github.mybatis.model;
+package com.github.mybatis.model;
 
-import org.github.mybatis.pagination.Pagination;
+import com.github.mybatis.pagination.Pagination;
 
 /**
  * 所有Example的基类，包括分页属性

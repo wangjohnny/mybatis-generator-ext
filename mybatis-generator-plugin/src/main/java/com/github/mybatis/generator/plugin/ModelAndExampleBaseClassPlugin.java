@@ -1,4 +1,4 @@
-package org.github.mybatis.generator.plugin;
+package com.github.mybatis.generator.plugin;
 
 import static org.mybatis.generator.internal.util.StringUtility.stringHasValue;
 

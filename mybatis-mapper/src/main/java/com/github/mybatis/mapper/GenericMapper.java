@@ -1,11 +1,12 @@
-package org.github.mybatis.mapper;
+package com.github.mybatis.mapper;
 
 import java.io.Serializable;
 import java.util.List;
 
 import org.apache.ibatis.annotations.Param;
-import org.github.mybatis.model.BaseModel;
-import org.github.mybatis.model.BaseModelExample;
+
+import com.github.mybatis.model.BaseModel;
+import com.github.mybatis.model.BaseModelExample;
 
 /**
  * @author johnny
