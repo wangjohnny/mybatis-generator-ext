@@ -59,11 +59,11 @@ public class MysqlPaginationPlugin extends PluginAdapter {
 	        IntrospectedTable introspectedTable, String name) {
 
 		topLevelClass.addImportedType(new FullyQualifiedJavaType(
-		        "com.company.core.Pagination"));
+		        "com.github.mybatis.pagination.Pagination"));
 		CommentGenerator commentGenerator = context.getCommentGenerator();
 		Field field = new Field();
 		field.setVisibility(JavaVisibility.PROTECTED);
-		field.setType(new FullyQualifiedJavaType("com.company.core.Pagination"));
+		field.setType(new FullyQualifiedJavaType("com.github.mybatis.pagination.Pagination"));
 		field.setName(name);
 		commentGenerator.addFieldComment(field, introspectedTable);
 		topLevelClass.addField(field);
@@ -74,7 +74,7 @@ public class MysqlPaginationPlugin extends PluginAdapter {
 		method.setVisibility(JavaVisibility.PUBLIC);
 		method.setName("set" + camel);
 		method.addParameter(new Parameter(new FullyQualifiedJavaType(
-		        "com.company.core.Pagination"), name));
+		        "com.github.mybatis.pagination.Pagination"), name));
 		method.addBodyLine("this." + name + "=" + name + ";");
 		commentGenerator.addGeneralMethodComment(method, introspectedTable);
 		topLevelClass.addMethod(method);
@@ -82,7 +82,7 @@ public class MysqlPaginationPlugin extends PluginAdapter {
 		method = new Method();
 		method.setVisibility(JavaVisibility.PUBLIC);
 		method.setReturnType(new FullyQualifiedJavaType(
-		        "com.company.core.Pagination"));
+		        "com.github.mybatis.pagination.Pagination"));
 		method.setName("get" + camel);
 		method.addBodyLine("return " + name + ";");
 		commentGenerator.addGeneralMethodComment(method, introspectedTable);

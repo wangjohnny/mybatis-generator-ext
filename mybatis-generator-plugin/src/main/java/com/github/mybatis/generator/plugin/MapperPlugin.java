@@ -26,114 +26,128 @@ import org.mybatis.generator.internal.DefaultShellCallback;
  */
 public class MapperPlugin extends PluginAdapter {
 
-	private ShellCallback shellCallback = null;
+    private static final String DEFAULT_DAO_SUPER_CLASS = "com.github.mybatis.mapper.GenericMapper";
 
-	private String daoTargetDir;
+    private ShellCallback shellCallback = null;
 
-	private String daoTargetPackage;
+    private String daoTargetDir;
 
-	private String daoSuperClass;
+    private String daoTargetPackage;
 
-	public MapperPlugin() {
-		shellCallback = new DefaultShellCallback(false);
-	}
+    /**
+     * Model基类文件包名
+     */
+    private String baseModelPackage;
 
-	@Override
-	public boolean validate(List<String> warnings) {
-		daoTargetDir = properties.getProperty("daoTargetDir");
-		boolean valid = stringHasValue(daoTargetDir);
+    /**
+     * Model类的前缀名称
+     */
+    private String baseModelNamePrefix;
 
-		daoTargetPackage = properties.getProperty("daoTargetPackage");
-		boolean valid2 = stringHasValue(daoTargetPackage);
+    private String daoSuperClass;
 
-		daoSuperClass = properties.getProperty("daoSuperClass");
-		boolean valid3 = stringHasValue(daoSuperClass);
+    public MapperPlugin() {
+        shellCallback = new DefaultShellCallback(false);
+    }
 
-		return valid && valid2 && valid3;
-	}
+    @Override
+    public boolean validate(List<String> warnings) {
+        daoTargetDir = properties.getProperty("daoTargetDir");
+        boolean valid = stringHasValue(daoTargetDir);
 
-	@Override
-	public List<GeneratedJavaFile> contextGenerateAdditionalJavaFiles(
-			IntrospectedTable introspectedTable) {
-		System.out.println("===============开始：生成Mapper文件================");
+        daoTargetPackage = properties.getProperty("daoTargetPackage");
+        boolean valid2 = stringHasValue(daoTargetPackage);
 
-		JavaFormatter javaFormatter = context.getJavaFormatter();
+        daoSuperClass = properties.getProperty("daoSuperClass");
+        if (!stringHasValue(daoSuperClass)) {
+            daoSuperClass = DEFAULT_DAO_SUPER_CLASS;
+        }
 
-		List<GeneratedJavaFile> mapperJavaFiles = new ArrayList<GeneratedJavaFile>();
-		for (GeneratedJavaFile javaFile : introspectedTable
-				.getGeneratedJavaFiles()) {
+        baseModelPackage = properties.getProperty("baseModelPackage");
+        if (!stringHasValue(baseModelPackage)) {
+            baseModelPackage = ModelAndExampleBaseClassPlugin.DEFAULT_BASE_MODEL_PACKAGE;
+        }
 
-			CompilationUnit unit = javaFile.getCompilationUnit();
-			FullyQualifiedJavaType baseModelJavaType = unit.getType();
+        baseModelNamePrefix = properties.getProperty("baseModelNamePrefix");
+        if (!stringHasValue(baseModelNamePrefix)) {
+            baseModelNamePrefix = ModelAndExampleBaseClassPlugin.DEFAULT_BASE_MODEL_NAME_PREFIX;
+        }
 
-			String shortName = baseModelJavaType.getShortName();
+        return valid && valid2;
+    }
 
-			if (shortName.endsWith("Example")) {// 针对Example类不要生成Mapper
-				continue;
-			}
+    @Override
+    public List<GeneratedJavaFile> contextGenerateAdditionalJavaFiles(IntrospectedTable introspectedTable) {
+        System.out.println("===============开始：生成Mapper文件================");
 
-			String subModelType = getSubModelType(baseModelJavaType);
-			String subModelExampleType = subModelType + "Example";
+        JavaFormatter javaFormatter = context.getJavaFormatter();
 
-			System.out.println("shortName:" + shortName);
+        List<GeneratedJavaFile> mapperJavaFiles = new ArrayList<GeneratedJavaFile>();
+        for (GeneratedJavaFile javaFile : introspectedTable.getGeneratedJavaFiles()) {
 
-			String subModelName = shortName.replace("Base", "");
+            CompilationUnit unit = javaFile.getCompilationUnit();
+            FullyQualifiedJavaType baseModelJavaType = unit.getType();
 
-			Interface mapperInterface = new Interface(daoTargetPackage
-					+ "." + subModelName + "Mapper");
+            String shortName = baseModelJavaType.getShortName();
 
-			mapperInterface.setVisibility(JavaVisibility.PUBLIC);
-			mapperInterface.addJavaDocLine(" /**");
-			mapperInterface.addJavaDocLine(" * 由MBG工具自动生成，添加与扩展XML文件中对应的同名方法");
-			mapperInterface.addJavaDocLine(" **/");
-			
-			FullyQualifiedJavaType subModelJavaType = new FullyQualifiedJavaType(
-					subModelType);
-			mapperInterface.addImportedType(subModelJavaType);
-			FullyQualifiedJavaType subModelExampleJavaType = new FullyQualifiedJavaType(
-					subModelExampleType);
-			mapperInterface.addImportedType(subModelExampleJavaType);
+            if (shortName.endsWith("Example")) {// 针对Example类不要生成Mapper
+                continue;
+            }
 
-			FullyQualifiedJavaType daoSuperType = new FullyQualifiedJavaType(
-					daoSuperClass);
-			// 添加泛型支持
-			daoSuperType.addTypeArgument(subModelJavaType);
-			daoSuperType.addTypeArgument(subModelExampleJavaType);
-			daoSuperType.addTypeArgument(new FullyQualifiedJavaType(
-					"java.lang.String"));
-			mapperInterface.addImportedType(daoSuperType);
-			mapperInterface.addSuperInterface(daoSuperType);
+            String subModelType = getSubModelType(baseModelJavaType);
+            String subModelExampleType = subModelType + "Example";
 
-			try {
-				GeneratedJavaFile mapperJavafile = new GeneratedJavaFile(
-						mapperInterface, daoTargetDir, javaFormatter);
+            System.out.println("shortName:" + shortName);
 
-				File mapperDir = shellCallback.getDirectory(daoTargetDir,
-						daoTargetPackage);
+            String subModelName = shortName.replace(baseModelNamePrefix, "");
 
-				File mapperFile = new File(mapperDir,
-						mapperJavafile.getFileName());
+            Interface mapperInterface = new Interface(daoTargetPackage + "." + subModelName + "Mapper");
 
-				// 文件不存在
-				if (!mapperFile.exists()) {
+            mapperInterface.setVisibility(JavaVisibility.PUBLIC);
+            mapperInterface.addJavaDocLine(" /**");
+            mapperInterface.addJavaDocLine(" * 由MBG工具自动生成，添加与扩展XML文件中对应的同名方法");
+            mapperInterface.addJavaDocLine(" **/");
 
-					mapperJavaFiles.add(mapperJavafile);
-				}
-			} catch (ShellException e) {
-				e.printStackTrace();
-			}
+            FullyQualifiedJavaType subModelJavaType = new FullyQualifiedJavaType(subModelType);
+            mapperInterface.addImportedType(subModelJavaType);
+            FullyQualifiedJavaType subModelExampleJavaType = new FullyQualifiedJavaType(subModelExampleType);
+            mapperInterface.addImportedType(subModelExampleJavaType);
 
-		}
+            FullyQualifiedJavaType daoSuperType = new FullyQualifiedJavaType(daoSuperClass);
+            // 添加泛型支持
+            daoSuperType.addTypeArgument(subModelJavaType);
+            daoSuperType.addTypeArgument(subModelExampleJavaType);
+            daoSuperType.addTypeArgument(new FullyQualifiedJavaType("java.lang.String"));
+            mapperInterface.addImportedType(daoSuperType);
+            mapperInterface.addSuperInterface(daoSuperType);
 
-		System.out.println("===============结束：生成Mapper文件================");
+            try {
+                GeneratedJavaFile mapperJavafile = new GeneratedJavaFile(mapperInterface, daoTargetDir, javaFormatter);
 
-		return mapperJavaFiles;
-	}
+                File mapperDir = shellCallback.getDirectory(daoTargetDir, daoTargetPackage);
 
-	private String getSubModelType(FullyQualifiedJavaType fullyQualifiedJavaType) {
-		String type = fullyQualifiedJavaType.getFullyQualifiedName();
-		String temp = "base.Base";
-		String newType = type.replace(temp, "");
-		return newType;
-	}
+                File mapperFile = new File(mapperDir, mapperJavafile.getFileName());
+
+                // 文件不存在
+                if (!mapperFile.exists()) {
+
+                    mapperJavaFiles.add(mapperJavafile);
+                }
+            } catch (ShellException e) {
+                e.printStackTrace();
+            }
+
+        }
+
+        System.out.println("===============结束：生成Mapper文件================");
+
+        return mapperJavaFiles;
+    }
+
+    private String getSubModelType(FullyQualifiedJavaType fullyQualifiedJavaType) {
+        String type = fullyQualifiedJavaType.getFullyQualifiedName();
+        String defaultPrefix = baseModelPackage + "." + baseModelNamePrefix;
+        String newType = type.replace(defaultPrefix, "");
+        return newType;
+    }
 }

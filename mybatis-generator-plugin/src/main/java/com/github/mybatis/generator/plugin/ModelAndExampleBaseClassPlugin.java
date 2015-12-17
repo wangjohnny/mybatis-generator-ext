@@ -36,8 +36,8 @@ import org.mybatis.generator.internal.DefaultShellCallback;
  * </ol>
  * <p>
  * 使用方法配置与在generatorConfig.xml中其中</br>
- * baseCLassNamePrefix 为新生成的类文件的前置关键字</br>
- * basePackage 为生成新的类文件的包名</br>
+ * baseModelNamePrefix 为新生成的类文件的前置关键字</br>
+ * baseModelPackage 为生成新的类文件的包名</br>
  * extXmlPackage 包名</br>
  * 
  * @author Johnny
@@ -45,37 +45,42 @@ import org.mybatis.generator.internal.DefaultShellCallback;
  **/
 public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 
+    public final static String DEFAULT_BASE_MODEL_PACKAGE = "base";
+    public final static String DEFAULT_BASE_MODEL_NAME_PREFIX = "Base";
+
+    private final static String DEFAULT_EXT_XML_PACKAGE = "ext";
+
     private ShellCallback shellCallback = null;
 
     /**
      * Model的基类
      */
-    private String baseModelSuperClass;
+    private String baseModelSuperClass = "com.github.mybatis.model.BaseModel";
 
     /**
      * Example的基类
      */
-    private String baseExampleSuperClass;
+    private String baseExampleSuperClass = "com.github.mybatis.model.BaseModelExample";
 
     /**
      * Criteria的基类
      */
-    private String baseCriteriaSuperClass;
+    private String baseCriteriaSuperClass = "com.github.mybatis.model.BaseCriteria";
 
     /**
-     * Model类文件的前缀名称
+     * Model类的前缀名称
      */
-    private String baseCLassNamePrefix;
+    private String baseModelNamePrefix;
 
     /**
      * Model类文件包名
      */
-    private String basePackage;
+    private String fullModelPackage;
 
     /**
      * 扩展xml文件包名
      */
-    private String extXmlPackage;
+    private String fullExtXmlPackage;
 
     /**
      * 利用java反射获取isMergeable参数，并修改
@@ -125,30 +130,51 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
     public boolean validate(List<String> warnings) {
         System.out.println("开始：validate");
 
-        baseCLassNamePrefix = properties.getProperty("baseCLassNamePrefix");
-        boolean valid = stringHasValue(baseCLassNamePrefix);
+        baseModelNamePrefix = properties.getProperty("baseModelNamePrefix");
+        if (!stringHasValue(baseModelNamePrefix)) {
+            baseModelNamePrefix = DEFAULT_BASE_MODEL_NAME_PREFIX;
+        }
 
-        basePackage = properties.getProperty("basePackage");
-        boolean valid2 = stringHasValue(basePackage);
+        String modelTargetPackage = properties.getProperty("modelTargetPackage");
+        if (!stringHasValue(modelTargetPackage)) {
+            return false;
+        }
 
-        extXmlPackage = properties.getProperty("extXmlPackage");
-        boolean valid3 = stringHasValue(extXmlPackage);
+        String baseModelPackage = properties.getProperty("baseModelPackage");
+        if (stringHasValue(baseModelPackage)) {
+            fullModelPackage = modelTargetPackage + "." + baseModelPackage;
+        } else {
+            fullModelPackage = modelTargetPackage + "." + DEFAULT_BASE_MODEL_PACKAGE;
+        }
 
-        baseModelSuperClass = properties.getProperty("baseModelSuperClass");
-        boolean valid4 = stringHasValue(baseModelSuperClass);
+        String xmlTargetPackage = properties.getProperty("xmlTargetPackage");
+        if (!stringHasValue(xmlTargetPackage)) {
+            return false;
+        }
 
-        baseExampleSuperClass = properties.getProperty("baseExampleSuperClass");
-        boolean valid5 = stringHasValue(baseExampleSuperClass);
+        String extXmlPackage = properties.getProperty("extXmlPackage");
+        if (stringHasValue(extXmlPackage)) {
+            fullExtXmlPackage = xmlTargetPackage + "." + extXmlPackage;
+        } else {
+            fullExtXmlPackage = xmlTargetPackage + "." + DEFAULT_EXT_XML_PACKAGE;
+        }
 
-        baseCriteriaSuperClass = properties.getProperty("baseCriteriaSuperClass");
-        boolean valid6 = stringHasValue(baseCriteriaSuperClass);
+        String baseModelSuperClazz = properties.getProperty("baseModelSuperClass");
+        if (stringHasValue(baseModelSuperClazz)) {
+            baseModelSuperClass = baseModelSuperClazz;
+        }
 
-        boolean b = valid && valid2 && valid3 && valid4 && valid5 && valid6;
+        String baseExampleSuperClazz = properties.getProperty("baseExampleSuperClass");
+        if (stringHasValue(baseExampleSuperClazz)) {
+            baseExampleSuperClass = baseExampleSuperClazz;
+        }
 
-        System.out.println("valid:" + valid + ",valid2:" + valid2 + "valid3:" + valid3 + "valid4:" + valid4 + ",valid5:"
-                + valid5 + ",valid6:" + valid6);
+        String baseCriteriaSuperClazz = properties.getProperty("baseCriteriaSuperClass");
+        if (stringHasValue(baseCriteriaSuperClazz)) {
+            baseCriteriaSuperClass = baseCriteriaSuperClazz;
+        }
 
-        return b;
+        return true;
     }
 
     /*
@@ -205,13 +231,13 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
             String targetProject = xmlFile.getTargetProject();
 
             try {
-                File directory = shellCallback.getDirectory(targetProject, extXmlPackage);
+                File directory = shellCallback.getDirectory(targetProject, fullExtXmlPackage);
 
                 File targetFile = new File(directory, fileName);
 
                 if (!targetFile.exists()) {// 需要判断这个xml文件是否存在，若存在则不生成
-                    GeneratedXmlFile gxf = new GeneratedXmlFile(document, fileName, extXmlPackage, targetProject, true,
-                            context.getXmlFormatter());
+                    GeneratedXmlFile gxf = new GeneratedXmlFile(document, fileName, fullExtXmlPackage, targetProject,
+                            true, context.getXmlFormatter());
                     extXmlFiles.add(gxf);
                 }
             } catch (ShellException e) {
@@ -403,7 +429,7 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
      */
     private String genBaseClassName(String oldModelType) {
         int indexOfLastDot = oldModelType.lastIndexOf('.');
-        return basePackage + "." + baseCLassNamePrefix + oldModelType.substring(indexOfLastDot + 1);
+        return fullModelPackage + "." + baseModelNamePrefix + oldModelType.substring(indexOfLastDot + 1);
     }
 
 }

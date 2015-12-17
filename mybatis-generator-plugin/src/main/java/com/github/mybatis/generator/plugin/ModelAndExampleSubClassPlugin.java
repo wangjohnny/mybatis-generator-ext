@@ -1,5 +1,7 @@
 package com.github.mybatis.generator.plugin;
 
+import static org.mybatis.generator.internal.util.StringUtility.stringHasValue;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,12 +29,33 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
 
     private ShellCallback shellCallback = null;
 
+    /**
+     * Model基类文件包名
+     */
+    private String baseModelPackage;
+
+    /**
+     * Model类的前缀名称
+     */
+    private String baseModelNamePrefix;
+
     public ModelAndExampleSubClassPlugin() {
         shellCallback = new DefaultShellCallback(false);
     }
 
     @Override
     public boolean validate(List<String> warnings) {
+
+        baseModelPackage = properties.getProperty("baseModelPackage");
+        if (!stringHasValue(baseModelPackage)) {
+            baseModelPackage = ModelAndExampleBaseClassPlugin.DEFAULT_BASE_MODEL_PACKAGE;
+        }
+
+        baseModelNamePrefix = properties.getProperty("baseModelNamePrefix");
+        if (!stringHasValue(baseModelNamePrefix)) {
+            baseModelNamePrefix = ModelAndExampleBaseClassPlugin.DEFAULT_BASE_MODEL_NAME_PREFIX;
+        }
+
         return true;
     }
 
@@ -90,8 +113,8 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
 
     private String getSubModelType(FullyQualifiedJavaType fullyQualifiedJavaType) {
         String type = fullyQualifiedJavaType.getFullyQualifiedName();
-        String temp = "base.Base";
-        String newType = type.replace(temp, "");
+        String defaultPrefix = baseModelPackage + "." + baseModelNamePrefix;
+        String newType = type.replace(defaultPrefix, "");
         return newType;
     }
 }
