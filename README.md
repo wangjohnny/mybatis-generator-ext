@@ -1,4 +1,4 @@
-#这是一个针对 mybatis generator(https://github.com/mybatis/generator, 后续会用 MBG 缩写来代替) 的扩展项目
+#这是一个针对 [mybatis generator](https://github.com/mybatis/generator) 的扩展项目, 后续会用 MBG 来指代原始的 mybatis generator项目
 
 #问题
 描述：使用原始的 MBG 在开发过程中，一旦修改数据库，就需要重新生成 Mapper 文件与 Model 类。
