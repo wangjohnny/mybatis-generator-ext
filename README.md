@@ -1,4 +1,5 @@
-这是一个针对 mybatis generator(https://github.com/mybatis/generator) 的扩展项目(通过 plugin 的方式)，
-想要解决的问题是：在开发过程中，一旦修改数据库，就需要重新生成 Mapper 文件与 Model 类。
+#这是一个针对 mybatis generator(https://github.com/mybatis/generator, 后续会用 MBG 缩写来代替) 的扩展项目
 
-想要实现
+#问题
+描述：使用原始的 MBG 在开发过程中，一旦修改数据库，就需要重新生成 Mapper 文件与 Model 类。
+但是我们在开发过程中，可能已经修改了以前自动生成的代码与xml文件，我经过 N 多项目的实践，总结出一套理论思路：生成的不修改，修改的不生成。随着需求的变化，可以不断使用自动生成，并且程序员在需要扩展的地方，有可以编写自己的扩展。这个方法，在互联网领域很有价值，因为大部分的项目，需求都是不断变化的。
