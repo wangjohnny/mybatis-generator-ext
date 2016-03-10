@@ -1,4 +1,5 @@
-#这是一个针对 [mybatis generator](https://github.com/mybatis/generator) 的扩展项目, 后续会用 MBG 来指代原始的 mybatis generator项目
+#项目介绍
+这是一个针对 [mybatis generator](https://github.com/mybatis/generator) 的扩展项目, 后续会用 MBG 来指代原始的 mybatis generator项目
 
 #问题
 描述：使用原始的 MBG 在开发过程中，一旦修改数据库，就需要重新生成 Mapper 文件与 Model 类。
@@ -14,4 +15,5 @@
 
 2. xml 文件：两个 xml 文件名相同，只是会放在不同的 package 下，一个是 MBG 自动生成的文件，每次覆盖。一个是留给程序员修改的文件，不再覆盖。
 
-TODO:后续准备添加一个 demo，来展现我的思路，以及如何使用这个工具
+#示例代码
+[mybatis generator demo](https://github.com/wangjohnny/mbg-demo-parent)
