@@ -77,12 +77,14 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
             subModelClass.addImportedType(baseModelJavaType);
             subModelClass.setSuperClass(baseModelJavaType);
 
-            Field field = new Field("serialVersionUID", new FullyQualifiedJavaType("long"));
-            field.setStatic(true);
-            field.setFinal(true);
-            field.setVisibility(JavaVisibility.PRIVATE);
-            field.setInitializationString("1L");
-            subModelClass.addField(field);
+            if (!baseModelJavaType.getFullyQualifiedName().endsWith("Example")) {// 对Example类不能添加序列化版本字段
+                Field field = new Field("serialVersionUID", new FullyQualifiedJavaType("long"));
+                field.setStatic(true);
+                field.setFinal(true);
+                field.setVisibility(JavaVisibility.PRIVATE);
+                field.setInitializationString("1L");
+                subModelClass.addField(field);
+            }
 
             String targetProject = javaFile.getTargetProject();
             FullyQualifiedJavaType subModelJavaType = subModelClass.getType();
