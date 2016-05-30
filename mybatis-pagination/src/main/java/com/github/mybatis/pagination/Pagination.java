@@ -1,5 +1,6 @@
 package com.github.mybatis.pagination;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -8,9 +9,11 @@ import java.util.List;
  *
  * @param <T>
  */
-public class Pagination<T> {
+public class Pagination<T> implements Serializable {
 
-	public static final Integer DEFAULT_PAGE_SIZE = 10;
+    private static final long serialVersionUID = 1L;
+
+    public static final Integer DEFAULT_PAGE_SIZE = 10;
 
 	/**
 	 * 每页显示记录数
