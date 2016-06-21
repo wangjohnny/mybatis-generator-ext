@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 
 import org.mybatis.generator.api.GeneratedXmlFile;
+import org.mybatis.generator.api.IntrospectedColumn;
 import org.mybatis.generator.api.IntrospectedTable;
 import org.mybatis.generator.api.PluginAdapter;
 import org.mybatis.generator.api.ShellCallback;
@@ -255,9 +256,21 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
     public boolean modelBaseRecordClassGenerated(TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
         System.out.println("===============开始：修改Model文件================");
 
-        // 添加example基类
-        topLevelClass.addImportedType(new FullyQualifiedJavaType(baseModelSuperClass));
-        topLevelClass.setSuperClass(baseModelSuperClass);
+        // 添加基类
+        FullyQualifiedJavaType superClazzType = new FullyQualifiedJavaType(baseModelSuperClass);
+        topLevelClass.addImportedType(superClazzType);
+
+        FullyQualifiedJavaType pkType = new FullyQualifiedJavaType("java.lang.String");
+        List<IntrospectedColumn> primaryKeyColumns = introspectedTable.getPrimaryKeyColumns();
+
+        if (!primaryKeyColumns.isEmpty()) {
+            pkType = primaryKeyColumns.get(0).getFullyQualifiedJavaType();//TODO:默认不考虑联合主键的情况
+            System.out.println("primaryKey Type:" + pkType);
+        }
+
+        superClazzType.addTypeArgument(pkType);
+        System.out.println("Model基类：" + superClazzType.toString());
+        topLevelClass.setSuperClass(superClazzType);
 
         clearModelCLass(topLevelClass);
 
