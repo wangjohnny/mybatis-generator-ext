@@ -8,17 +8,17 @@ import java.io.Serializable;
  * @author Johnny
  *
  */
-public class BaseModel implements Serializable {
+public class BaseModel<PK extends Serializable> implements Serializable {
 
     private static final long serialVersionUID = -6590882888801386323L;
 
-    protected String sid;
+    protected PK sid;
 
-    public String getSid() {
+    public PK getSid() {
         return sid;
     }
 
-    public void setSid(String sid) {
+    public void setSid(PK sid) {
         this.sid = sid;
     }
 	
