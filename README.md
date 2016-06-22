@@ -15,5 +15,7 @@
 
 2. xml 文件：两个 xml 文件名相同，只是会放在不同的 package 下，一个是 MBG 自动生成的文件，每次覆盖。一个是留给程序员修改的文件，不再覆盖。
 
+**注意：暂时没考虑联合主键的的情况**
+
 #示例代码
 [mybatis generator demo](https://github.com/wangjohnny/mbg-demo-parent)
