@@ -15,7 +15,7 @@ import com.github.mybatis.model.BaseModelExample;
  * @param <TE>
  * @param <PK>
  */
-public interface GenericMapper<T extends BaseModel, TE extends BaseModelExample, PK extends Serializable> {
+public interface GenericMapper<T extends BaseModel<PK>, TE extends BaseModelExample, PK extends Serializable> {
 	int countByExample(TE example);
 
 	int deleteByExample(TE example);
