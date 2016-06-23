@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.mybatis.generator.api.GeneratedJavaFile;
+import org.mybatis.generator.api.IntrospectedColumn;
 import org.mybatis.generator.api.IntrospectedTable;
 import org.mybatis.generator.api.JavaFormatter;
 import org.mybatis.generator.api.PluginAdapter;
@@ -81,6 +82,15 @@ public class MapperPlugin extends PluginAdapter {
         System.out.println("===============开始：生成Mapper文件================");
 
         JavaFormatter javaFormatter = context.getJavaFormatter();
+        
+        FullyQualifiedJavaType pkType = null;
+        List<IntrospectedColumn> primaryKeyColumns = introspectedTable.getPrimaryKeyColumns();
+        if (primaryKeyColumns.isEmpty()) {
+            pkType = new FullyQualifiedJavaType("java.lang.String");
+        } else {
+            pkType = primaryKeyColumns.get(0).getFullyQualifiedJavaType();//TODO:默认不考虑联合主键的情况
+            System.out.println("primaryKey Type:" + pkType);
+        }
 
         List<GeneratedJavaFile> mapperJavaFiles = new ArrayList<GeneratedJavaFile>();
         for (GeneratedJavaFile javaFile : introspectedTable.getGeneratedJavaFiles()) {
@@ -117,7 +127,7 @@ public class MapperPlugin extends PluginAdapter {
             // 添加泛型支持
             daoSuperType.addTypeArgument(subModelJavaType);
             daoSuperType.addTypeArgument(subModelExampleJavaType);
-            daoSuperType.addTypeArgument(new FullyQualifiedJavaType("java.lang.String"));
+            daoSuperType.addTypeArgument(pkType);
             mapperInterface.addImportedType(daoSuperType);
             mapperInterface.addSuperInterface(daoSuperType);
 
