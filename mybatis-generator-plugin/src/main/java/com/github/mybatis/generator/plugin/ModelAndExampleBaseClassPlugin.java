@@ -260,10 +260,11 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
         FullyQualifiedJavaType superClazzType = new FullyQualifiedJavaType(baseModelSuperClass);
         topLevelClass.addImportedType(superClazzType);
 
-        FullyQualifiedJavaType pkType = new FullyQualifiedJavaType("java.lang.String");
+        FullyQualifiedJavaType pkType = null;
         List<IntrospectedColumn> primaryKeyColumns = introspectedTable.getPrimaryKeyColumns();
-
-        if (!primaryKeyColumns.isEmpty()) {
+        if (primaryKeyColumns.isEmpty()) {
+            pkType = new FullyQualifiedJavaType("java.lang.String");//没有主键的表，默认使用字符串作为主键类型
+        } else {
             pkType = primaryKeyColumns.get(0).getFullyQualifiedJavaType();//TODO:默认不考虑联合主键的情况
             System.out.println("primaryKey Type:" + pkType);
         }
