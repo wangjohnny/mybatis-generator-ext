@@ -32,6 +32,10 @@ public class Pagination<T> implements Serializable {
 
 	private List<T> dataList;
 
+    public Pagination() {
+        this(0);//默认第0行开始
+    }
+
 	public Pagination(Integer begin) {
 		this(begin, DEFAULT_PAGE_SIZE);
 	}
