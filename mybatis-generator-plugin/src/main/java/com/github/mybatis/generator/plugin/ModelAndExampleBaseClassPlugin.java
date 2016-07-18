@@ -79,6 +79,11 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
     private String fullModelPackage;
 
     /**
+     * 类的主键字段名, 默认为sid
+     */
+    private String modelPKColumnName = "sid";
+
+    /**
      * 扩展xml文件包名
      */
     private String fullExtXmlPackage;
@@ -163,6 +168,11 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
         String baseModelSuperClazz = properties.getProperty("baseModelSuperClass");
         if (stringHasValue(baseModelSuperClazz)) {
             baseModelSuperClass = baseModelSuperClazz;
+        }
+
+        String pkColumnName = properties.getProperty("pkColumnName");
+        if (stringHasValue(pkColumnName)) {
+            modelPKColumnName = pkColumnName;
         }
 
         String baseExampleSuperClazz = properties.getProperty("baseExampleSuperClass");
@@ -285,7 +295,7 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
      * 
      * @param topLevelClass
      */
-    private static void clearModelCLass(TopLevelClass topLevelClass) {
+    private void clearModelCLass(TopLevelClass topLevelClass) {
 
         System.out.println("开始清理Model的TopLevelCLass多余属性");
 
@@ -294,7 +304,7 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
         List<Field> fields = topLevelClass.getFields();
         for (Field field : fields) {
             String fieldName = field.getName();
-            if ("sid".equals(fieldName)) {// 将要删除的变量
+            if (modelPKColumnName.equals(fieldName)) {// 将要删除的变量
                 System.out.println("removing field:" + fieldName);
                 removingFields.add(field);
             }
@@ -303,11 +313,14 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 
         HashSet<Method> removingMethods = new HashSet<Method>();
 
+        String pkSetter = "set" + capitalize(modelPKColumnName);
+        String pkGetter = "get" + capitalize(modelPKColumnName);
+        
         List<Method> methods = topLevelClass.getMethods();
         for (Method method : methods) {
             String methodName = method.getName();
 
-            if ("setSid".equals(methodName) || "getSid".equals(methodName)) {// 将要删除的方法
+            if (pkSetter.equals(methodName) || pkGetter.equals(methodName)) {// 将要删除的方法
                 System.out.println("removing method:" + methodName);
                 removingMethods.add(method);
             }
@@ -444,6 +457,24 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
     private String genBaseClassName(String oldModelType) {
         int indexOfLastDot = oldModelType.lastIndexOf('.');
         return fullModelPackage + "." + baseModelNamePrefix + oldModelType.substring(indexOfLastDot + 1);
+    }
+
+    public static String capitalize(final String str) {
+        int strLen;
+        if (str == null || (strLen = str.length()) == 0) {
+            return str;
+        }
+
+        char firstChar = str.charAt(0);
+        if (Character.isTitleCase(firstChar)) {
+            // already capitalized
+            return str;
+        }
+
+        return new StringBuilder(strLen)
+            .append(Character.toTitleCase(firstChar))
+            .append(str.substring(1))
+            .toString();
     }
 
 }
