@@ -6,18 +6,17 @@
     <parent>
         <groupId>com.github.mybatis.generator.ext</groupId>
         <artifactId>mybatis-generator-ext</artifactId>
-        <version>2</version>
+        <version>1.2.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>mybatis-model</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <dependencies>
         <dependency>
             <groupId>com.github.mybatis.generator.ext</groupId>
             <artifactId>mybatis-pagination</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>1.2.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>
