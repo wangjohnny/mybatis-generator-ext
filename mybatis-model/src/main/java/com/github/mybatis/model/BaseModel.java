@@ -12,14 +12,14 @@ public class BaseModel<PK extends Serializable> implements Serializable {
 
     private static final long serialVersionUID = -6590882888801386323L;
 
-    protected PK id;
+    protected PK sid;
 
-	public PK getId() {
-		return id;
+	public PK getSid() {
+		return sid;
 	}
 
-	public void setId(PK id) {
-		this.id = id;
+	public void setSid(PK sid) {
+		this.sid = sid;
 	}
 
 }
