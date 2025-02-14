@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.github.mybatis.generator.ext</groupId>
         <artifactId>mybatis-generator-ext</artifactId>
-        <version>1.2.0-SNAPSHOT</version>
+        <version>1.3.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>mybatis-pagination</artifactId>
