@@ -69,16 +69,12 @@ public class EqualsHashCodePlugin extends PluginAdapter {
     protected void generateEquals(TopLevelClass topLevelClass,
             List<IntrospectedColumn> introspectedColumns,
             IntrospectedTable introspectedTable) {
-        Method method = new Method();
+        Method method = new Method("equals");
         method.setVisibility(JavaVisibility.PUBLIC);
         method.setReturnType(FullyQualifiedJavaType
                 .getBooleanPrimitiveInstance());
-        method.setName("equals"); //$NON-NLS-1$
         method.addParameter(new Parameter(FullyQualifiedJavaType
                 .getObjectInstance(), "that")); //$NON-NLS-1$
-        if (introspectedTable.isJava5Targeted()) {
-            method.addAnnotation("@Override"); //$NON-NLS-1$
-        }
 
         context.getCommentGenerator().addGeneralMethodComment(method,
                 introspectedTable);
@@ -167,13 +163,9 @@ public class EqualsHashCodePlugin extends PluginAdapter {
     protected void generateHashCode(TopLevelClass topLevelClass,
             List<IntrospectedColumn> introspectedColumns,
             IntrospectedTable introspectedTable) {
-        Method method = new Method();
+        Method method = new Method("hashCode");
         method.setVisibility(JavaVisibility.PUBLIC);
         method.setReturnType(FullyQualifiedJavaType.getIntInstance());
-        method.setName("hashCode"); //$NON-NLS-1$
-        if (introspectedTable.isJava5Targeted()) {
-            method.addAnnotation("@Override"); //$NON-NLS-1$
-        }
 
         context.getCommentGenerator().addGeneralMethodComment(method,
                 introspectedTable);
