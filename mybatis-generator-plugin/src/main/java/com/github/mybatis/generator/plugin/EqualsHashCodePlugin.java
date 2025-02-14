@@ -75,7 +75,8 @@ public class EqualsHashCodePlugin extends PluginAdapter {
                 .getBooleanPrimitiveInstance());
         method.addParameter(new Parameter(FullyQualifiedJavaType
                 .getObjectInstance(), "that")); //$NON-NLS-1$
-
+        method.addAnnotation("@Override"); //$NON-NLS-1$
+        
         context.getCommentGenerator().addGeneralMethodComment(method,
                 introspectedTable);
 
@@ -166,7 +167,7 @@ public class EqualsHashCodePlugin extends PluginAdapter {
         Method method = new Method("hashCode");
         method.setVisibility(JavaVisibility.PUBLIC);
         method.setReturnType(FullyQualifiedJavaType.getIntInstance());
-
+        method.addAnnotation("@Override"); //$NON-NLS-1$
         context.getCommentGenerator().addGeneralMethodComment(method,
                 introspectedTable);
 
