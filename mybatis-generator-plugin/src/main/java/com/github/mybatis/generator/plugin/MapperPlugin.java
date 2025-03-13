@@ -28,7 +28,8 @@ import org.mybatis.generator.internal.DefaultShellCallback;
 public class MapperPlugin extends PluginAdapter {
 
     private static final String DEFAULT_DAO_SUPER_CLASS = "com.github.mybatis.mapper.GenericMapper";
-
+    private static final String MAPPER_ANNOTATION = "org.apache.ibatis.annotations.Mapper";
+    
     private ShellCallback shellCallback = null;
 
     private String daoTargetDir;
@@ -88,7 +89,14 @@ public class MapperPlugin extends PluginAdapter {
         if (primaryKeyColumns.isEmpty()) {
             pkType = new FullyQualifiedJavaType("java.lang.String");
         } else {
-            pkType = primaryKeyColumns.get(0).getFullyQualifiedJavaType();//TODO:默认不考虑联合主键的情况
+            if (primaryKeyColumns.size() == 1) {// 单主键
+                IntrospectedColumn pkColumn = primaryKeyColumns.get(0);
+                pkType = pkColumn.getFullyQualifiedJavaType();
+            } else {// 联合主键
+                String primaryKeyType = introspectedTable.getPrimaryKeyType();
+                pkType = new FullyQualifiedJavaType(primaryKeyType);
+            }
+//            pkType = primaryKeyColumns.get(0).getFullyQualifiedJavaType();//TODO:默认不考虑联合主键的情况
             System.out.println("primaryKey Type:" + pkType);
         }
 
@@ -100,7 +108,8 @@ public class MapperPlugin extends PluginAdapter {
 
             String shortName = baseModelJavaType.getShortName();
 
-            if (shortName.endsWith("Example")) {// 针对Example类不要生成Mapper
+            // 针对Example或者 联合主键类(以Key字符串结尾)类不要生成Mapper
+            if (shortName.endsWith("Example") || shortName.endsWith("Key")) {
                 continue;
             }
 
@@ -130,6 +139,9 @@ public class MapperPlugin extends PluginAdapter {
             daoSuperType.addTypeArgument(pkType);
             mapperInterface.addImportedType(daoSuperType);
             mapperInterface.addSuperInterface(daoSuperType);
+
+            mapperInterface.addImportedType(new FullyQualifiedJavaType(MAPPER_ANNOTATION));
+            mapperInterface.addAnnotation("@Mapper");
 
             try {
                 GeneratedJavaFile mapperJavafile = new GeneratedJavaFile(mapperInterface, daoTargetDir, javaFormatter);

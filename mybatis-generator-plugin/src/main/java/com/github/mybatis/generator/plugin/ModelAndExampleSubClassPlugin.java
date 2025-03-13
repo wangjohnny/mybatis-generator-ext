@@ -65,11 +65,18 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
 
         JavaFormatter javaFormatter = context.getJavaFormatter();
 
-        List<GeneratedJavaFile> subClassJavaFiles = new ArrayList<GeneratedJavaFile>();
+        List<GeneratedJavaFile> classJavaFiles = new ArrayList<GeneratedJavaFile>();
         for (GeneratedJavaFile javaFile : introspectedTable.getGeneratedJavaFiles()) {
 
+            String targetProject = javaFile.getTargetProject();
+            
             CompilationUnit unit = javaFile.getCompilationUnit();
             FullyQualifiedJavaType baseModelJavaType = unit.getType();
+
+            String fullyQualifiedName = baseModelJavaType.getFullyQualifiedName();
+            if (fullyQualifiedName.endsWith("Key")) {
+				continue;
+			}
 
             TopLevelClass subModelClass = new TopLevelClass(getSubModelType(baseModelJavaType));
 
@@ -77,7 +84,7 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
             subModelClass.addImportedType(baseModelJavaType);
             subModelClass.setSuperClass(baseModelJavaType);
 
-            if (!baseModelJavaType.getFullyQualifiedName().endsWith("Example")) {// 对Example类不能添加序列化版本字段
+			if (!fullyQualifiedName.endsWith("Example")) {// 对Example类不能添加序列化版本字段
                 Field field = new Field("serialVersionUID", new FullyQualifiedJavaType("long"));
                 field.setStatic(true);
                 field.setFinal(true);
@@ -86,21 +93,20 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
                 subModelClass.addField(field);
             }
 
-            String targetProject = javaFile.getTargetProject();
             FullyQualifiedJavaType subModelJavaType = subModelClass.getType();
             String subModelPackageName = subModelJavaType.getPackageName();
 
             try {
-                GeneratedJavaFile subCLassJavafile = new GeneratedJavaFile(subModelClass, targetProject, javaFormatter);
+                GeneratedJavaFile subClassJavafile = new GeneratedJavaFile(subModelClass, targetProject, javaFormatter);
 
                 File subModelDir = shellCallback.getDirectory(targetProject, subModelPackageName);
 
-                File subModelFile = new File(subModelDir, subCLassJavafile.getFileName());
+                File subModelFile = new File(subModelDir, subClassJavafile.getFileName());
 
                 // 文件不存在
                 if (!subModelFile.exists()) {
 
-                    subClassJavaFiles.add(subCLassJavafile);
+                    classJavaFiles.add(subClassJavafile);
                 }
             } catch (ShellException e) {
                 e.printStackTrace();
@@ -110,7 +116,7 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
 
         System.out.println("===============结束：生成Model子类文件================");
 
-        return subClassJavaFiles;
+        return classJavaFiles;
     }
 
     private String getSubModelType(FullyQualifiedJavaType fullyQualifiedJavaType) {

@@ -4,7 +4,7 @@
 
     <groupId>com.github.mybatis.generator.ext</groupId>
     <artifactId>mybatis-generator-ext</artifactId>
-    <version>1.3.0-SNAPSHOT</version>
+    <version>1.4.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -17,51 +17,8 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <skipTests>true</skipTests>
+        <!-- 设置 Java 版本 -->
+        <java.version>21</java.version>
     </properties>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
-    <pluginRepositories>
-        <pluginRepository>
-            <id>nexus-plugin-repo</id>
-            <url>http://nexus.piaofun.cn:8081/nexus/content/groups/public</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </pluginRepository>
-<!-- 
-        <pluginRepository>
-            <id>mbg-maven-repo</id>
-            <url>https://raw.githubusercontent.com/wangjohnny/maven-repo/master/repository</url>
-        </pluginRepository>
- -->
-    </pluginRepositories>
-
-    <distributionManagement>
-        <repository>
-            <id>nexus-releases</id>
-            <name>Nexus Release Repository</name>
-            <url>http://nexus.whaley.cn:8081/nexus/content/repositories/releases/</url>
-        </repository>
-        <snapshotRepository>
-            <id>nexus-snapshots</id>
-            <name>Nexus Snapshot Repository</name>
-            <url>http://nexus.whaley.cn:8081/nexus/content/repositories/snapshots/</url>
-        </snapshotRepository>
-    </distributionManagement>
 
 </project>
