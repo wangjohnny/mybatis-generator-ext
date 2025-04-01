@@ -18,20 +18,26 @@ public class ModelValidationPlugin extends PluginAdapter {
             IntrospectedColumn introspectedColumn,
             IntrospectedTable introspectedTable, 
             ModelClassType modelClassType) {
+        
+        // 遇到 sid 或者 sid 结尾的字段，不要添加 validation
+        String columnName = introspectedColumn.getActualColumnName();
+        if (columnName.equalsIgnoreCase("sid") || columnName.toUpperCase().endsWith("_sid")) {
+            return true;
+        }
 
         // 添加必要的import
         addImports(topLevelClass);
 
         // 非空检查
         if (!introspectedColumn.isNullable()) {
-            field.addAnnotation("@NotNull(message = \"" + getFieldName(field) + "不能为空\")");
+            field.addAnnotation("@NotNull(message = \"" + field.getName() + "不能为空\")");
         }
 
         // 字符串长度检查
         if (introspectedColumn.isStringColumn()) {
             int length = introspectedColumn.getLength();
             field.addAnnotation(
-                    String.format("@Size(max = %d, message = \"%s长度不能超过%d个字符\")", length, getFieldName(field), length));
+                    String.format("@Size(max = %d, message = \"%s长度不能超过%d个字符\")", length, field.getName(), length));
         }
 
         // 数字类型检查
@@ -83,10 +89,10 @@ public class ModelValidationPlugin extends PluginAdapter {
         // @formatter:on
     }
 
-    private String getFieldName(Field field) {
-        String name = field.getName();
-        return name.substring(0, 1).toUpperCase() + name.substring(1);
-    }
+//    private String getFieldName(Field field) {
+//        String name = field.getName();
+//        return name.substring(0, 1).toUpperCase() + name.substring(1);
+//    }
 
     @Override
     public boolean validate(List<String> warnings) {
