@@ -2,10 +2,10 @@ package com.github.mybatis.mapper;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.ibatis.annotations.Param;
 
-import com.github.mybatis.model.BaseModel;
 import com.github.mybatis.model.BaseModelExample;
 
 /**
@@ -16,28 +16,27 @@ import com.github.mybatis.model.BaseModelExample;
  * @param <PK>
  */
 public interface GenericMapper<T extends Serializable, TE extends BaseModelExample, PK extends Serializable> {
-    
-	long countByExample(TE example);
 
-	int deleteByExample(TE example);
+    long countByExample(TE example);
 
-	int deleteByPrimaryKey(PK id);
+    int deleteByExample(TE example);
 
-	int insert(T record);
+    int deleteByPrimaryKey(PK id);
 
-	int insertSelective(T record);
+    int insert(T record);
 
-	List<T> selectByExample(TE example);
+    int insertSelective(T record);
 
-	T selectByPrimaryKey(PK id);
+    List<T> selectByExample(TE example);
 
-	int updateByExampleSelective(@Param("record") T record,
-			@Param("example") TE example);
+    Optional<T> selectByPrimaryKey(PK id);
 
-	int updateByExample(@Param("record") T record, @Param("example") TE example);
+    int updateByExampleSelective(@Param("record") T record, @Param("example") TE example);
 
-	int updateByPrimaryKeySelective(T record);
+    int updateByExample(@Param("record") T record, @Param("example") TE example);
 
-	int updateByPrimaryKey(T record);
+    int updateByPrimaryKeySelective(T record);
+
+    int updateByPrimaryKey(T record);
 
 }

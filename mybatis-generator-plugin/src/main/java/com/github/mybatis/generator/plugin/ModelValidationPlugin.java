@@ -10,6 +10,11 @@ import org.mybatis.generator.api.dom.java.Field;
 import org.mybatis.generator.api.dom.java.FullyQualifiedJavaType;
 import org.mybatis.generator.api.dom.java.TopLevelClass;
 
+/**
+ * 添加 jakarta.validation 的注解
+ * 
+ * @author Johnny
+ */
 public class ModelValidationPlugin extends PluginAdapter {
 
     @Override
