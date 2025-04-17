@@ -23,7 +23,7 @@ public class Pagination<T> implements Serializable {
 	/**
 	 * 查询结果总记录数
 	 */
-	private Integer totalRowNumber;
+	private Long totalRowNumber;
 
 	/**
 	 * 起始行号,默认第0行开始
@@ -45,7 +45,7 @@ public class Pagination<T> implements Serializable {
 		this.pageSize = pageSize;
 	}
 
-	public void setTotalRowNumber(Integer totalRowNumber) {
+	public void setTotalRowNumber(Long totalRowNumber) {
 		this.totalRowNumber = (totalRowNumber == null ? 0 : totalRowNumber);
 	}
 
@@ -61,7 +61,7 @@ public class Pagination<T> implements Serializable {
 		return pageSize;
 	}
 
-	public Integer getTotalRowNumber() {
+	public Long getTotalRowNumber() {
 		return this.totalRowNumber;
 	}
 
