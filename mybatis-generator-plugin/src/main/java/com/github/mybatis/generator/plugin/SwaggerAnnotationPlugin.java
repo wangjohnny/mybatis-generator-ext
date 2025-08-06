@@ -1,0 +1,65 @@
+package com.github.mybatis.generator.plugin;
+
+import static org.mybatis.generator.internal.util.StringUtility.stringHasValue;
+
+import java.util.List;
+
+import org.mybatis.generator.api.IntrospectedColumn;
+import org.mybatis.generator.api.IntrospectedTable;
+import org.mybatis.generator.api.PluginAdapter;
+import org.mybatis.generator.api.dom.java.Field;
+import org.mybatis.generator.api.dom.java.TopLevelClass;
+
+public class SwaggerAnnotationPlugin extends PluginAdapter {
+    private static String SWAGGER_SCHEMA_DEFAULT_ANNOTATION = "io.swagger.v3.oas.annotations.media.Schema";
+    private String swaggerSchemaAnnotation = SWAGGER_SCHEMA_DEFAULT_ANNOTATION;
+
+    @Override
+    public boolean validate(List<String> warnings) {
+
+        swaggerSchemaAnnotation = properties.getProperty("swaggerSchemaAnnotation");
+        if (!stringHasValue(swaggerSchemaAnnotation)) {
+            swaggerSchemaAnnotation = SWAGGER_SCHEMA_DEFAULT_ANNOTATION;
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean modelFieldGenerated(Field field,
+                                     TopLevelClass topLevelClass,
+                                     IntrospectedColumn introspectedColumn,
+                                     IntrospectedTable introspectedTable,
+                                     ModelClassType modelClassType) {
+        
+        // 获取数据库字段注释
+        String remarks = introspectedColumn.getRemarks();
+        
+        // 如果字段有注释，则添加@Schema注解
+        if (remarks != null && !remarks.isEmpty()) {
+            field.addAnnotation(String.format("@Schema(title = \"%s\")", remarks));
+        } else {
+            field.addAnnotation("@Schema");
+        }
+        
+        // 确保导入了Schema注解类
+        topLevelClass.addImportedType(swaggerSchemaAnnotation);
+        
+        return true;
+    }
+
+    @Override
+    public boolean modelBaseRecordClassGenerated(TopLevelClass topLevelClass,
+                                               IntrospectedTable introspectedTable) {
+        // 在类级别添加@Schema注解
+        String tableRemarks = introspectedTable.getRemarks();
+        if (tableRemarks != null && !tableRemarks.isEmpty()) {
+            topLevelClass.addAnnotation(String.format("@Schema(description = \"%s\")", tableRemarks));
+        } else {
+            topLevelClass.addAnnotation("@Schema");
+        }
+        
+        topLevelClass.addImportedType(swaggerSchemaAnnotation);
+        return true;
+    }
+}
