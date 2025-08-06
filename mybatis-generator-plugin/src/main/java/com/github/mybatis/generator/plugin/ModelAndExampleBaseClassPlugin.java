@@ -224,13 +224,14 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 //			introspectedTable.setPrimaryKeyType(primaryKeyClassName);
 //		}
 
-		List<GeneratedXmlFile> extXmlFiles = new ArrayList<GeneratedXmlFile>(1);
+		List<GeneratedXmlFile> allXmlFiles = new ArrayList<GeneratedXmlFile>(1);
 		List<GeneratedXmlFile> xmlFiles = introspectedTable.getGeneratedXmlFiles();
 
 		for (GeneratedXmlFile xmlFile : xmlFiles) {
 			try {
-				// 将xml的isMergeabl改为false
+//				 将xml的isMergeabl改为false
 				isMergeableFid.set(xmlFile, false);
+//				xmlFile.setMergeable(false);
 			} catch (IllegalArgumentException e) {
 				e.printStackTrace();
 			} catch (IllegalAccessException e) {
@@ -257,7 +258,7 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 
 			String fileName = xmlFile.getFileName();
 			String targetProject = xmlFile.getTargetProject();
-
+			
 			try {
 				File directory = shellCallback.getDirectory(targetProject, fullExtXmlPackage);
 
@@ -266,18 +267,18 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 				if (!targetFile.exists()) {// 需要判断这个xml文件是否存在，若存在则不生成
 					GeneratedXmlFile gxf = new GeneratedXmlFile(document, fileName, fullExtXmlPackage, targetProject,
 							true, context.getXmlFormatter());
-					extXmlFiles.add(gxf);
+					allXmlFiles.add(gxf);
 				}
 			} catch (ShellException e) {
 				e.printStackTrace();
 			}
 
-			extXmlFiles.add(xmlFile);
+			allXmlFiles.add(xmlFile);
 		}
 
 		System.out.println("===============完成：生成Mapper扩展xml文件================");
 
-		return extXmlFiles;
+		return allXmlFiles;
 	}
 
 	public boolean modelBaseRecordClassGenerated(TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
