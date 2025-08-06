@@ -34,7 +34,7 @@ public class BooleanColumnPlugin extends PluginAdapter {
             int length = introspectedColumn.getLength();
             String columnName = introspectedColumn.getActualColumnName();
 
-            if (columnName.startsWith(PREFIX_STRING) && length == 1) {
+            if (columnName.toLowerCase().startsWith(PREFIX_STRING) && length == 1) {
                 String propertyName = introspectedColumn.getJavaProperty().substring(PREFIX_STRING_IS.length());
 
                 introspectedColumn.setJavaProperty(toLowerCaseFirstOne(propertyName));
