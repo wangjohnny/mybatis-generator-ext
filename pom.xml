@@ -11,7 +11,6 @@
         <module>mybatis-pagination</module>
         <module>mybatis-model</module>
         <module>mybatis-mapper</module>
-        <module>mybatis-service</module>
         <module>mybatis-generator-plugin</module>
     </modules>
 
@@ -20,6 +19,8 @@
         <skipTests>true</skipTests>
         <!-- 设置 Java 版本 -->
         <java.version>21</java.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
     </properties>
 
     <distributionManagement>
