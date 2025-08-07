@@ -10,6 +10,10 @@ import org.mybatis.generator.api.PluginAdapter;
 import org.mybatis.generator.api.dom.java.Field;
 import org.mybatis.generator.api.dom.java.TopLevelClass;
 
+/**
+ *
+ * @author lao king
+ */
 public class SwaggerAnnotationPlugin extends PluginAdapter {
     private static String SWAGGER_SCHEMA_DEFAULT_ANNOTATION = "io.swagger.v3.oas.annotations.media.Schema";
     private String swaggerSchemaAnnotation = SWAGGER_SCHEMA_DEFAULT_ANNOTATION;
@@ -31,13 +35,16 @@ public class SwaggerAnnotationPlugin extends PluginAdapter {
                                      IntrospectedColumn introspectedColumn,
                                      IntrospectedTable introspectedTable,
                                      ModelClassType modelClassType) {
-        
+
         // 获取数据库字段注释
         String remarks = introspectedColumn.getRemarks();
         
         // 如果字段有注释，则添加@Schema注解
         if (remarks != null && !remarks.isEmpty()) {
-            field.addAnnotation(String.format("@Schema(title = \"%s\")", remarks));
+            // 同时设置title和description
+            field.addAnnotation(String.format(
+                "@Schema(title = \"%s\", description = \"%s\")", 
+                remarks, remarks));
         } else {
             field.addAnnotation("@Schema");
         }
@@ -54,7 +61,8 @@ public class SwaggerAnnotationPlugin extends PluginAdapter {
         // 在类级别添加@Schema注解
         String tableRemarks = introspectedTable.getRemarks();
         if (tableRemarks != null && !tableRemarks.isEmpty()) {
-            topLevelClass.addAnnotation(String.format("@Schema(description = \"%s\")", tableRemarks));
+            topLevelClass.addAnnotation(String.format("@Schema(title = \"%s\", description = \"%s\")", 
+                    tableRemarks, tableRemarks));
         } else {
             topLevelClass.addAnnotation("@Schema");
         }
