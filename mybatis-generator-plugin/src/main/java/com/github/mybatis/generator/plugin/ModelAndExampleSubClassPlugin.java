@@ -22,7 +22,7 @@ import org.mybatis.generator.internal.DefaultShellCallback;
 /**
  * 生成Model 的相关子类
  * 
- * @author Johnny
+ * @author lao king
  *
  */
 public class ModelAndExampleSubClassPlugin extends PluginAdapter {
@@ -83,6 +83,12 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
             subModelClass.setVisibility(JavaVisibility.PUBLIC);
             subModelClass.addImportedType(baseModelJavaType);
             subModelClass.setSuperClass(baseModelJavaType);
+            
+            // 给 model 子类添加注解
+            addLombokAnnotations(subModelClass);
+
+            // 在类级别添加@Schema注解
+            addLombokAnnotations(subModelClass, introspectedTable);
 
 			if (!fullyQualifiedName.endsWith("Example")) {// 对Example类不能添加序列化版本字段
                 Field field = new Field("serialVersionUID", new FullyQualifiedJavaType("long"));
@@ -124,5 +130,38 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
         String defaultPrefix = baseModelPackage + "." + baseModelNamePrefix;
         String newType = type.replace(defaultPrefix, "");
         return newType;
+    }
+
+    private void addLombokAnnotations(TopLevelClass topLevelClass) {
+
+        topLevelClass.addAnnotation("@Data");
+        topLevelClass.addImportedType("lombok.Data");
+        
+        topLevelClass.addAnnotation("@ToString(callSuper = true)");
+        topLevelClass.addImportedType("lombok.ToString");
+        
+        topLevelClass.addAnnotation("@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)");
+        topLevelClass.addImportedType("lombok.EqualsAndHashCode");
+
+        topLevelClass.addAnnotation("@NoArgsConstructor");
+        topLevelClass.addImportedType("lombok.NoArgsConstructor");
+
+//        topLevelClass.addAnnotation("@AllArgsConstructor");
+//        topLevelClass.addImportedType("lombok.AllArgsConstructor");
+
+        topLevelClass.addAnnotation("@SuperBuilder");
+        topLevelClass.addImportedType("lombok.experimental.SuperBuilder");
+    }
+    
+    private void addLombokAnnotations(TopLevelClass subModelClass, IntrospectedTable introspectedTable) {
+
+        String tableRemarks = introspectedTable.getRemarks();
+        if (tableRemarks != null && !tableRemarks.isEmpty()) {
+            subModelClass.addAnnotation(
+                    String.format("@Schema(title = \"%s\", description = \"%s\")", tableRemarks, tableRemarks));
+        } else {
+            subModelClass.addAnnotation("@Schema");
+        }
+        subModelClass.addImportedType("io.swagger.v3.oas.annotations.media.Schema");
     }
 }

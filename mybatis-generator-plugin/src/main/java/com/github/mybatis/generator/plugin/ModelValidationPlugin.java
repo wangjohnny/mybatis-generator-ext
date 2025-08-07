@@ -13,7 +13,7 @@ import org.mybatis.generator.api.dom.java.TopLevelClass;
 /**
  * 添加 jakarta.validation 的注解
  * 
- * @author Johnny
+ * @author lao king
  */
 public class ModelValidationPlugin extends PluginAdapter {
 

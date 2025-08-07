@@ -15,16 +15,16 @@ import org.mybatis.generator.api.dom.java.TopLevelClass;
  * @author lao king
  */
 public class SwaggerAnnotationPlugin extends PluginAdapter {
-    private static String SWAGGER_SCHEMA_DEFAULT_ANNOTATION = "io.swagger.v3.oas.annotations.media.Schema";
-    private String swaggerSchemaAnnotation = SWAGGER_SCHEMA_DEFAULT_ANNOTATION;
+//    private static String SWAGGER_SCHEMA_DEFAULT_ANNOTATION = "io.swagger.v3.oas.annotations.media.Schema";
+//    private String swaggerSchemaAnnotation = SWAGGER_SCHEMA_DEFAULT_ANNOTATION;
 
     @Override
     public boolean validate(List<String> warnings) {
 
-        swaggerSchemaAnnotation = properties.getProperty("swaggerSchemaAnnotation");
-        if (!stringHasValue(swaggerSchemaAnnotation)) {
-            swaggerSchemaAnnotation = SWAGGER_SCHEMA_DEFAULT_ANNOTATION;
-        }
+//        swaggerSchemaAnnotation = properties.getProperty("swaggerSchemaAnnotation");
+//        if (!stringHasValue(swaggerSchemaAnnotation)) {
+//            swaggerSchemaAnnotation = SWAGGER_SCHEMA_DEFAULT_ANNOTATION;
+//        }
 
         return true;
     }
@@ -50,7 +50,7 @@ public class SwaggerAnnotationPlugin extends PluginAdapter {
         }
         
         // 确保导入了Schema注解类
-        topLevelClass.addImportedType(swaggerSchemaAnnotation);
+        topLevelClass.addImportedType("io.swagger.v3.oas.annotations.media.Schema");
         
         return true;
     }
@@ -58,16 +58,16 @@ public class SwaggerAnnotationPlugin extends PluginAdapter {
     @Override
     public boolean modelBaseRecordClassGenerated(TopLevelClass topLevelClass,
                                                IntrospectedTable introspectedTable) {
-        // 在类级别添加@Schema注解
-        String tableRemarks = introspectedTable.getRemarks();
-        if (tableRemarks != null && !tableRemarks.isEmpty()) {
-            topLevelClass.addAnnotation(String.format("@Schema(title = \"%s\", description = \"%s\")", 
-                    tableRemarks, tableRemarks));
-        } else {
-            topLevelClass.addAnnotation("@Schema");
-        }
-        
-        topLevelClass.addImportedType(swaggerSchemaAnnotation);
+        // 在类级别添加@Schema注解，注解内容转移到子类
+//        String tableRemarks = introspectedTable.getRemarks();
+//        if (tableRemarks != null && !tableRemarks.isEmpty()) {
+//            topLevelClass.addAnnotation(String.format("@Schema(title = \"%s\", description = \"%s\")", 
+//                    tableRemarks, tableRemarks));
+//        } else {
+//            topLevelClass.addAnnotation("@Schema");
+//        }
+//        
+//        topLevelClass.addImportedType("io.swagger.v3.oas.annotations.media.Schema");
         return true;
     }
 }

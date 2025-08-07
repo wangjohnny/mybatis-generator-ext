@@ -315,7 +315,7 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 //			topLevelClass.addSuperInterface(superInterfaceType);
 		}
 		
-		topLevelClass.setAbstract(true);
+//		topLevelClass.setAbstract(true);
 
 //		clearModelCLass(topLevelClass);
 
