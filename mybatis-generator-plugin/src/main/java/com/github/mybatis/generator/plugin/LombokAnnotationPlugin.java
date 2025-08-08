@@ -17,7 +17,7 @@ import org.mybatis.generator.api.dom.java.TopLevelClass;
 public class LombokAnnotationPlugin extends PluginAdapter {
     
     private boolean enableBuilder;
-//    
+
     @Override
     public boolean validate(List<String> warnings) {
         enableBuilder = Boolean.parseBoolean(properties.getProperty("enableBuilder", "true"));

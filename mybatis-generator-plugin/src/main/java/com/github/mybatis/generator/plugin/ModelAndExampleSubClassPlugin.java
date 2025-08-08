@@ -3,6 +3,9 @@ package com.github.mybatis.generator.plugin;
 import static org.mybatis.generator.internal.util.StringUtility.stringHasValue;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -89,8 +92,8 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
             addLombokAnnotation(subModelClass);
 
             // 在类级别添加@Schema注解
-            addSwaggerAnnotation(subModelClass, introspectedTable);
-            
+            addSwaggerAnnotation(subModelClass, introspectedTable.getRemarks());
+
             // 给 Model 类添加 view 类
             addViewClass(subModelClass, baseModelJavaType);
 
@@ -115,8 +118,11 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
 
                 // 文件不存在
                 if (!subModelFile.exists()) {
-
                     classJavaFiles.add(subClassJavafile);
+                } else {
+                    if (!fullyQualifiedName.endsWith("Example")) {// Example 类不需要更新 Schema
+                        updateOrAddSchema(subModelFile, introspectedTable.getRemarks());
+                    }
                 }
             } catch (ShellException e) {
                 e.printStackTrace();
@@ -136,6 +142,11 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
         return newType;
     }
 
+    /**
+     * 给子类添加 Lombok 注解
+     * 
+     * @param topLevelClass
+     */
     private void addLombokAnnotation(TopLevelClass topLevelClass) {
 
         topLevelClass.addAnnotation("@Data");
@@ -155,13 +166,16 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
 
         topLevelClass.addAnnotation("@SuperBuilder");
         topLevelClass.addImportedType("lombok.experimental.SuperBuilder");
-        
-        
     }
     
-    private void addSwaggerAnnotation(TopLevelClass subModelClass, IntrospectedTable introspectedTable) {
+    /**
+     * 给子类添加 Swagger 注解
+     * 
+     * @param subModelClass
+     * @param introspectedTable
+     */
+    private void addSwaggerAnnotation(TopLevelClass subModelClass, String tableRemarks) {
 
-        String tableRemarks = introspectedTable.getRemarks();
         if (tableRemarks != null && !tableRemarks.isEmpty()) {
             subModelClass.addAnnotation(
                     String.format("@Schema(title = \"%s\", description = \"%s\")", tableRemarks, tableRemarks));
@@ -171,9 +185,13 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
         subModelClass.addImportedType("io.swagger.v3.oas.annotations.media.Schema");
     }
     
+    /**
+     * 给子类添加 jsonview 支持类
+     * 
+     * @param topLevelClass
+     * @param baseModelJavaType
+     */
     private void addViewClass(TopLevelClass topLevelClass, FullyQualifiedJavaType baseModelJavaType) {
-
-        // 给子类添加 jsonview 支持类
 
         InnerClass viewClass = new InnerClass("View");
         
@@ -187,5 +205,80 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
         
         viewClass.addInnerClass(listPageViewClass);
         topLevelClass.addInnerClass(viewClass);
+    }
+    
+    private void updateSchemaAnnotation(File file, String newRemarks) {
+        try {
+            // 读取所有行
+            List<String> lines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
+            
+            String schema = String.format("@Schema(title = \"%s\", description = \"%s\")", newRemarks, newRemarks);
+            boolean hasSchema = false;
+            // 遍历每一行，找到 @Schema 并替换整行
+            for (int i = 0; i < lines.size(); i++) {
+                if (lines.get(i).contains("@Schema")) {
+                    hasSchema = true;
+                    if (!lines.get(i).equals(schema)) {//只有remarks 的内容改了，才会更新scheam
+                        lines.set(i, schema);
+                        break; // 假设只有一个 @Schema 注解   
+                    }
+                }
+            }
+            
+            // 如果没有 @Schema，在类定义前添加
+            if (!hasSchema) {
+                for (int i = 0; i < lines.size(); i++) {
+                    if (lines.get(i).contains("public class ")) {
+                        lines.add(i, schema);
+                        break;
+                    }
+                }
+            }
+            
+            // 写回文件
+            Files.write(file.toPath(), lines, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to update @Schema line", e);
+        }
+    }
+    
+    private void updateOrAddSchema(File file, String newRemarks) {
+        try {
+            List<String> lines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
+            int classDefLineIndex = -1;
+
+            // 查找类定义行和类级别 @Schema
+            for (int i = 0; i < lines.size(); i++) {
+                String line = lines.get(i).trim();
+                
+                // 标记类定义行（如 "public class User"）
+                if (line.startsWith("public class ") || line.startsWith("class ")) {
+                    classDefLineIndex = i;
+                    break; // 找到类定义后退出循环
+                }
+            }
+            
+            String schema = String.format("@Schema(title = \"%s\", description = \"%s\")", newRemarks, newRemarks);
+            boolean hasClassSchema = false;
+            // 遍历每一行，找到 @Schema 并替换整行
+            for (int i = 0; i < classDefLineIndex; i++) {
+                if (lines.get(i).contains("@Schema")) {
+                    hasClassSchema = true;
+                    if (!lines.get(i).equals(schema)) {//只有remarks 的内容改了，才会更新scheam
+                        lines.set(i, schema);
+                        break; // 假设只有一个 @Schema 注解   
+                    }
+                }
+            }
+            
+            // 如果没有类级别 @Schema，在类定义上方添加
+            if (!hasClassSchema && classDefLineIndex != -1) {
+                lines.add(classDefLineIndex, schema);
+            }
+            
+            Files.write(file.toPath(), lines, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to update class-level @Schema", e);
+        }
     }
 }
