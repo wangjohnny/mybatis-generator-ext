@@ -14,6 +14,7 @@ import org.mybatis.generator.api.ShellCallback;
 import org.mybatis.generator.api.dom.java.CompilationUnit;
 import org.mybatis.generator.api.dom.java.Field;
 import org.mybatis.generator.api.dom.java.FullyQualifiedJavaType;
+import org.mybatis.generator.api.dom.java.InnerClass;
 import org.mybatis.generator.api.dom.java.JavaVisibility;
 import org.mybatis.generator.api.dom.java.TopLevelClass;
 import org.mybatis.generator.exception.ShellException;
@@ -89,6 +90,9 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
 
             // 在类级别添加@Schema注解
             addSwaggerAnnotation(subModelClass, introspectedTable);
+            
+            // 给 Model 类添加 view 类
+            addViewClass(subModelClass, baseModelJavaType);
 
 			if (!fullyQualifiedName.endsWith("Example")) {// 对Example类不能添加序列化版本字段
                 Field field = new Field("serialVersionUID", new FullyQualifiedJavaType("long"));
@@ -151,6 +155,8 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
 
         topLevelClass.addAnnotation("@SuperBuilder");
         topLevelClass.addImportedType("lombok.experimental.SuperBuilder");
+        
+        
     }
     
     private void addSwaggerAnnotation(TopLevelClass subModelClass, IntrospectedTable introspectedTable) {
@@ -163,5 +169,23 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
             subModelClass.addAnnotation("@Schema");
         }
         subModelClass.addImportedType("io.swagger.v3.oas.annotations.media.Schema");
+    }
+    
+    private void addViewClass(TopLevelClass topLevelClass, FullyQualifiedJavaType baseModelJavaType) {
+
+        // 给子类添加 jsonview 支持类
+
+        InnerClass viewClass = new InnerClass("View");
+        
+        viewClass.setSuperClass(baseModelJavaType.getShortName() + ".BasicView");
+        viewClass.setVisibility(JavaVisibility.PUBLIC);
+        viewClass.setStatic(true);
+
+        InnerClass listPageViewClass = new InnerClass("ListPage");
+        listPageViewClass.setVisibility(JavaVisibility.PUBLIC);
+        listPageViewClass.setStatic(true);
+        
+        viewClass.addInnerClass(listPageViewClass);
+        topLevelClass.addInnerClass(viewClass);
     }
 }

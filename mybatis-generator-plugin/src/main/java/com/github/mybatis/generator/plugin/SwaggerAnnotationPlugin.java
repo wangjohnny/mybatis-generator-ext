@@ -9,6 +9,7 @@ import org.mybatis.generator.api.dom.java.Field;
 import org.mybatis.generator.api.dom.java.TopLevelClass;
 
 /**
+ * 添加 Swagger 注解
  *
  * @author lao king
  */

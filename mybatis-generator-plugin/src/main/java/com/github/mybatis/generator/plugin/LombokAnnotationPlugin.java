@@ -10,7 +10,8 @@ import org.mybatis.generator.api.dom.java.Method;
 import org.mybatis.generator.api.dom.java.TopLevelClass;
 
 /**
- * 添加注解
+ * 添加 lombok 注解
+ * 
  * @author lao king
  */
 public class LombokAnnotationPlugin extends PluginAdapter {
