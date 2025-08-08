@@ -85,10 +85,10 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
             subModelClass.setSuperClass(baseModelJavaType);
             
             // 给 model 子类添加注解
-            addLombokAnnotations(subModelClass);
+            addLombokAnnotation(subModelClass);
 
             // 在类级别添加@Schema注解
-            addLombokAnnotations(subModelClass, introspectedTable);
+            addSwaggerAnnotation(subModelClass, introspectedTable);
 
 			if (!fullyQualifiedName.endsWith("Example")) {// 对Example类不能添加序列化版本字段
                 Field field = new Field("serialVersionUID", new FullyQualifiedJavaType("long"));
@@ -132,7 +132,7 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
         return newType;
     }
 
-    private void addLombokAnnotations(TopLevelClass topLevelClass) {
+    private void addLombokAnnotation(TopLevelClass topLevelClass) {
 
         topLevelClass.addAnnotation("@Data");
         topLevelClass.addImportedType("lombok.Data");
@@ -153,7 +153,7 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
         topLevelClass.addImportedType("lombok.experimental.SuperBuilder");
     }
     
-    private void addLombokAnnotations(TopLevelClass subModelClass, IntrospectedTable introspectedTable) {
+    private void addSwaggerAnnotation(TopLevelClass subModelClass, IntrospectedTable introspectedTable) {
 
         String tableRemarks = introspectedTable.getRemarks();
         if (tableRemarks != null && !tableRemarks.isEmpty()) {

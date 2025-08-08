@@ -1,7 +1,5 @@
 package com.github.mybatis.generator.plugin;
 
-import static org.mybatis.generator.internal.util.StringUtility.stringHasValue;
-
 import java.util.List;
 
 import org.mybatis.generator.api.IntrospectedColumn;
@@ -15,17 +13,9 @@ import org.mybatis.generator.api.dom.java.TopLevelClass;
  * @author lao king
  */
 public class SwaggerAnnotationPlugin extends PluginAdapter {
-//    private static String SWAGGER_SCHEMA_DEFAULT_ANNOTATION = "io.swagger.v3.oas.annotations.media.Schema";
-//    private String swaggerSchemaAnnotation = SWAGGER_SCHEMA_DEFAULT_ANNOTATION;
 
     @Override
     public boolean validate(List<String> warnings) {
-
-//        swaggerSchemaAnnotation = properties.getProperty("swaggerSchemaAnnotation");
-//        if (!stringHasValue(swaggerSchemaAnnotation)) {
-//            swaggerSchemaAnnotation = SWAGGER_SCHEMA_DEFAULT_ANNOTATION;
-//        }
-
         return true;
     }
 

@@ -6,11 +6,7 @@ import org.mybatis.generator.api.IntrospectedColumn;
 import org.mybatis.generator.api.IntrospectedTable;
 import org.mybatis.generator.api.PluginAdapter;
 import org.mybatis.generator.api.dom.java.Field;
-import org.mybatis.generator.api.dom.java.FullyQualifiedJavaType;
-import org.mybatis.generator.api.dom.java.InnerClass;
-import org.mybatis.generator.api.dom.java.JavaVisibility;
 import org.mybatis.generator.api.dom.java.Method;
-import org.mybatis.generator.api.dom.java.Parameter;
 import org.mybatis.generator.api.dom.java.TopLevelClass;
 
 /**
@@ -19,16 +15,11 @@ import org.mybatis.generator.api.dom.java.TopLevelClass;
  */
 public class LombokAnnotationPlugin extends PluginAdapter {
     
-//    private boolean enableLombok;
-//    private boolean enableSwagger;
-//    private boolean enableBuilder;
+    private boolean enableBuilder;
 //    
     @Override
     public boolean validate(List<String> warnings) {
-//        enableLombok = Boolean.parseBoolean(properties.getProperty("enableLombok", "true"));
-//        enableSwagger = Boolean.parseBoolean(properties.getProperty("enableSwagger", "true"));
-//        enableValidation = Boolean.parseBoolean(properties.getProperty("enableValidation", "true"));
-//        enableBuilder = Boolean.parseBoolean(properties.getProperty("enableBuilder", "false"));
+        enableBuilder = Boolean.parseBoolean(properties.getProperty("enableBuilder", "true"));
         return true;
     }
     
@@ -92,21 +83,17 @@ public class LombokAnnotationPlugin extends PluginAdapter {
 //        topLevelClass.addAnnotation("@AllArgsConstructor");
 //        topLevelClass.addImportedType("lombok.AllArgsConstructor");
 
-        topLevelClass.addAnnotation("@SuperBuilder");
-        topLevelClass.addImportedType("lombok.experimental.SuperBuilder");
+        if (enableBuilder) {
+            topLevelClass.addAnnotation("@SuperBuilder");
+            topLevelClass.addImportedType("lombok.experimental.SuperBuilder");
+        }
 
-        // 添加 Lombok 注解
-//        if (enableLombok) {
-//            addLombokAnnotations(topLevelClass);
-//        }
-        
-        // 添加 Builder 模式
-//        if (enableBuilder) {
-//            addBuilderSupport(topLevelClass);
-//        }
         return true;
     }
     
+    /**
+     * 给存在联合主键 Key 类，添加lombok
+     */
     @Override
     public boolean modelPrimaryKeyClassGenerated(TopLevelClass topLevelClass,
             IntrospectedTable introspectedTable) {
@@ -124,78 +111,5 @@ public class LombokAnnotationPlugin extends PluginAdapter {
         topLevelClass.addImportedType("lombok.experimental.SuperBuilder");
 
         return true;
-    }
-    
-    private void addLombokAnnotations(TopLevelClass topLevelClass) {
-        // 添加 @Data 注解
-        topLevelClass.addAnnotation("@Data");
-        topLevelClass.addImportedType("lombok.Data");
-        
-        // 添加 @Builder 注解
-        topLevelClass.addAnnotation("@Builder");
-        topLevelClass.addImportedType("lombok.Builder");
-        
-        // 添加 @NoArgsConstructor 和 @AllArgsConstructor
-//        topLevelClass.addAnnotation("@NoArgsConstructor");
-//        topLevelClass.addAnnotation("@AllArgsConstructor");
-//        topLevelClass.addImportedType("lombok.NoArgsConstructor");
-//        topLevelClass.addImportedType("lombok.AllArgsConstructor");
-    }
-    
-    private void addBuilderSupport(TopLevelClass topLevelClass) {
-        // 添加 builder() 静态方法
-        Method builderMethod = new Method("builder");
-        builderMethod.setStatic(true);
-        builderMethod.setReturnType(new FullyQualifiedJavaType(topLevelClass.getType().getShortName() + ".Builder"));
-        builderMethod.setVisibility(JavaVisibility.PUBLIC);
-        builderMethod.addBodyLine("return new Builder();");
-        
-        topLevelClass.addMethod(builderMethod);
-        
-        // 添加 Builder 内部类
-        InnerClass builderClass = new InnerClass(new FullyQualifiedJavaType("Builder"));
-        builderClass.setStatic(true);
-        builderClass.setVisibility(JavaVisibility.PUBLIC);
-        
-        // 为 Builder 类添加字段和方法
-        List<Field> fields = topLevelClass.getFields();
-        for (Field field : fields) {
-            String fieldName = field.getName();
-            FullyQualifiedJavaType fieldType = field.getType();
-            
-            // 添加 Builder 字段
-            Field builderField = new Field(fieldName, fieldType);
-            builderField.setVisibility(JavaVisibility.PRIVATE);
-            builderClass.addField(builderField);
-            
-            // 添加 Builder setter 方法
-            Method setterMethod = new Method(fieldName);
-            setterMethod.setReturnType(new FullyQualifiedJavaType("Builder"));
-            setterMethod.setVisibility(JavaVisibility.PUBLIC);
-            setterMethod.addParameter(new Parameter(fieldType, fieldName));
-            setterMethod.addBodyLine("this." + fieldName + " = " + fieldName + ";");
-            setterMethod.addBodyLine("return this;");
-            builderClass.addMethod(setterMethod);
-        }
-        
-        // 添加 build() 方法
-        Method buildMethod = new Method("build");
-        buildMethod.setReturnType(topLevelClass.getType());
-        buildMethod.setVisibility(JavaVisibility.PUBLIC);
-        StringBuilder buildBody = new StringBuilder("return new ")
-            .append(topLevelClass.getType().getShortName())
-            .append("(");
-        
-        for (int i = 0; i < fields.size(); i++) {
-            buildBody.append(fields.get(i).getName());
-            if (i < fields.size() - 1) {
-                buildBody.append(", ");
-            }
-        }
-        buildBody.append(");");
-        buildMethod.addBodyLine(buildBody.toString());
-        builderClass.addMethod(buildMethod);
-        
-        topLevelClass.addInnerClass(builderClass);
     }
 }
