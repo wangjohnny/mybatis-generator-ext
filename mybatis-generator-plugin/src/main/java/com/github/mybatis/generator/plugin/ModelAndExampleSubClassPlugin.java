@@ -23,6 +23,7 @@ import org.mybatis.generator.api.dom.java.TopLevelClass;
 import org.mybatis.generator.exception.ShellException;
 import org.mybatis.generator.internal.DefaultShellCallback;
 
+
 /**
  * 生成Model 的相关子类
  * 
@@ -206,47 +207,12 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
         viewClass.addInnerClass(listPageViewClass);
         topLevelClass.addInnerClass(viewClass);
     }
-    
-    private void updateSchemaAnnotation(File file, String newRemarks) {
-        try {
-            // 读取所有行
-            List<String> lines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
-            
-            String schema = String.format("@Schema(title = \"%s\", description = \"%s\")", newRemarks, newRemarks);
-            boolean hasSchema = false;
-            // 遍历每一行，找到 @Schema 并替换整行
-            for (int i = 0; i < lines.size(); i++) {
-                if (lines.get(i).contains("@Schema")) {
-                    hasSchema = true;
-                    if (!lines.get(i).equals(schema)) {//只有remarks 的内容改了，才会更新scheam
-                        lines.set(i, schema);
-                        break; // 假设只有一个 @Schema 注解   
-                    }
-                }
-            }
-            
-            // 如果没有 @Schema，在类定义前添加
-            if (!hasSchema) {
-                for (int i = 0; i < lines.size(); i++) {
-                    if (lines.get(i).contains("public class ")) {
-                        lines.add(i, schema);
-                        break;
-                    }
-                }
-            }
-            
-            // 写回文件
-            Files.write(file.toPath(), lines, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to update @Schema line", e);
-        }
-    }
-    
+
     private void updateOrAddSchema(File file, String newRemarks) {
         try {
             List<String> lines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
-            int classDefLineIndex = -1;
 
+            int classDefLineIndex = -1;
             // 查找类定义行和类级别 @Schema
             for (int i = 0; i < lines.size(); i++) {
                 String line = lines.get(i).trim();
@@ -255,6 +221,19 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
                 if (line.startsWith("public class ") || line.startsWith("class ")) {
                     classDefLineIndex = i;
                     break; // 找到类定义后退出循环
+                }
+            }
+
+            int packageLineIndex = -1;
+            boolean hasImportSchema = false;
+            // 寻找 import 语句，也可能没有 import，所以需要寻找 package 行
+            for (int i = 0; i < classDefLineIndex; i++) {
+                String line = lines.get(i).trim();
+                
+                if (line.startsWith("package ")) {
+                    packageLineIndex = i;
+                } else if(line.matches("import\s+io.swagger.v3.oas.annotations.media.Schema;")) {
+                    hasImportSchema = true;
                 }
             }
             
@@ -273,7 +252,12 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
             
             // 如果没有类级别 @Schema，在类定义上方添加
             if (!hasClassSchema && classDefLineIndex != -1) {
-                lines.add(classDefLineIndex, schema);
+                if (hasImportSchema) {
+                    lines.add(classDefLineIndex, schema);
+                } else {
+                    lines.add(packageLineIndex + 2, "import io.swagger.v3.oas.annotations.media.Schema;");
+                    lines.add(classDefLineIndex + 1, schema);
+                }
             }
             
             Files.write(file.toPath(), lines, StandardCharsets.UTF_8);
