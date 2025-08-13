@@ -89,14 +89,16 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
             subModelClass.addImportedType(baseModelJavaType);
             subModelClass.setSuperClass(baseModelJavaType);
             
-            // 给 model 子类添加注解
-            addLombokAnnotation(subModelClass);
+            if (!fullyQualifiedName.endsWith("Example")) {// Example类不需要添加注解
+                // 给 model 子类添加注解
+                addLombokAnnotation(subModelClass);
 
-            // 在类级别添加@Schema注解
-            addSwaggerAnnotation(subModelClass, introspectedTable.getRemarks());
+                // 在类级别添加@Schema注解
+                addSwaggerAnnotation(subModelClass, introspectedTable.getRemarks());
 
-            // 给 Model 类添加 view 类
-            addViewClass(subModelClass, baseModelJavaType);
+                // 给 Model 类添加 view 类
+                addViewClass(subModelClass, baseModelJavaType);                
+            }
 
 			if (!fullyQualifiedName.endsWith("Example")) {// 对Example类不能添加序列化版本字段
                 Field field = new Field("serialVersionUID", new FullyQualifiedJavaType("long"));
