@@ -1,6 +1,7 @@
 package com.github.mybatis.generator.plugin;
 
 import java.util.List;
+import java.util.Set;
 
 import org.mybatis.generator.api.IntrospectedColumn;
 import org.mybatis.generator.api.IntrospectedTable;
@@ -17,20 +18,39 @@ import org.mybatis.generator.api.dom.java.TopLevelClass;
  */
 public class JacksonAnnotationPlugin extends PluginAdapter {
     
+    private Set<String> ignoreColumnsForSerialization;
+    
     @Override
     public boolean validate(List<String> warnings) {
+        String ignoreColumns = properties.getProperty("ignoreColumnsForSerialization", "");
+        ignoreColumnsForSerialization = Set.of(ignoreColumns.split(","));
+        System.out.printf("需要忽略的字段：%s%n", ignoreColumnsForSerialization);
+
         return true;
     }
-    
+
     @Override
     public boolean modelFieldGenerated(Field field,
                                      TopLevelClass topLevelClass,
                                      IntrospectedColumn introspectedColumn,
                                      IntrospectedTable introspectedTable,
                                      ModelClassType modelClassType) {
-        
-        field.addAnnotation("@JsonView(BasicView.Public.class)");
-        topLevelClass.addImportedType("com.fasterxml.jackson.annotation.JsonView");
+
+        String ignoredColumn = introspectedColumn.getActualColumnName();
+        boolean ignored = ignoreColumnsForSerialization.stream()
+                .anyMatch(s -> {
+                    return s.equalsIgnoreCase(ignoredColumn);
+                });
+
+        if (ignored) {
+            System.out.printf("序列化时忽略字段: %s%n", ignoredColumn);
+
+            field.addAnnotation("@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)");
+            topLevelClass.addImportedType("com.fasterxml.jackson.annotation.JsonProperty");
+        } else {
+            field.addAnnotation("@JsonView(BasicView.Public.class)");
+            topLevelClass.addImportedType("com.fasterxml.jackson.annotation.JsonView");
+        }
 
         return true;
     }
