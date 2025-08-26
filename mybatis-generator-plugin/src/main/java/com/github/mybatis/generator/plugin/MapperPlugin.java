@@ -80,7 +80,8 @@ public class MapperPlugin extends PluginAdapter {
 
     @Override
     public List<GeneratedJavaFile> contextGenerateAdditionalJavaFiles(IntrospectedTable introspectedTable) {
-        System.out.println("===============开始：生成Mapper文件================");
+        String tableName = introspectedTable.getFullyQualifiedTable().getIntrospectedTableName();
+        System.out.printf("===============开始：生成表 %s 的Mapper文件================%n", tableName);
 
         JavaFormatter javaFormatter = context.getJavaFormatter();
         
@@ -161,7 +162,7 @@ public class MapperPlugin extends PluginAdapter {
 
         }
 
-        System.out.println("===============结束：生成Mapper文件================");
+        System.out.printf("===============结束：生成表 %s 的Mapper文件================%n", tableName);
 
         return mapperJavaFiles;
     }

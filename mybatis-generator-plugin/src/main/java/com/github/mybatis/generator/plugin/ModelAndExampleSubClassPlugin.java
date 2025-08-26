@@ -66,7 +66,8 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
 
     @Override
     public List<GeneratedJavaFile> contextGenerateAdditionalJavaFiles(IntrospectedTable introspectedTable) {
-        System.out.println("===============开始：生成Model子类文件================");
+        String tableName = introspectedTable.getFullyQualifiedTable().getIntrospectedTableName();
+        System.out.printf("===============开始：生成表 %s 的Model子类文件================%n", tableName);
 
         JavaFormatter javaFormatter = context.getJavaFormatter();
 
@@ -133,7 +134,7 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
 
         }
 
-        System.out.println("===============结束：生成Model子类文件================");
+        System.out.printf("===============结束：生成表 %s 的Model子类文件================%n", tableName);
 
         return classJavaFiles;
     }
@@ -264,7 +265,7 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
             
             Files.write(file.toPath(), lines, StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to update class-level @Schema", e);
+            throw new RuntimeException("更新实体类@Schema报错", e);
         }
     }
 }

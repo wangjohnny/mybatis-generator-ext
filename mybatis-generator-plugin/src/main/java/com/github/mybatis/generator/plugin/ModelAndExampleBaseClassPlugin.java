@@ -210,7 +210,8 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 	 */
 	@Override
 	public List<GeneratedXmlFile> contextGenerateAdditionalXmlFiles(IntrospectedTable introspectedTable) {
-		System.out.println("===============开始：生成Mapper扩展xml文件================");
+		String tableName = introspectedTable.getFullyQualifiedTable().getIntrospectedTableName();
+        System.out.printf("===============开始：生成表 %s 的Mapper扩展xml文件================%n", tableName);
 
 		if (modelClassName != null) {
 			introspectedTable.setBaseRecordType(modelClassName);
@@ -276,13 +277,15 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 			allXmlFiles.add(xmlFile);
 		}
 
-		System.out.println("===============完成：生成Mapper扩展xml文件================");
+		System.out.printf("===============完成：生成表 %s 的Mapper扩展xml文件================%n", tableName);
 
 		return allXmlFiles;
 	}
 
+	@Override
 	public boolean modelBaseRecordClassGenerated(TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
-		System.out.println("===============开始：修改Model文件================");
+	    String tableName = introspectedTable.getFullyQualifiedTable().getIntrospectedTableName();
+		System.out.printf("===============开始：修改表 %s 的Model文件================%n", tableName);
 
 //		FullyQualifiedJavaType superInterfaceType = new FullyQualifiedJavaType(this.baseModelSuperInterface);
 //		topLevelClass.addImportedType(superInterfaceType);
@@ -303,7 +306,7 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 
 			System.out.println("主键类型:" + pkType);
 
-			// 添加基类
+			// 添加父类
 	        FullyQualifiedJavaType superClazzType = new FullyQualifiedJavaType(baseModelSuperClass);
 //			System.out.println("Model的基类：" + superClazzType.toString());
 			// TODO: 暂时去掉集成 BaseModel 的代码，联合主键的Model 会有基类，以后可能通过接口类的形式来定义一些通用接口
@@ -319,7 +322,7 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 
 //		clearModelCLass(topLevelClass);
 
-		System.out.println("===============完成：修改Model文件================");
+		System.out.printf("===============完成：修改表 %s 的Model文件================%n", tableName);
 
 		return super.modelBaseRecordClassGenerated(topLevelClass, introspectedTable);
 	}
@@ -362,8 +365,10 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 		methods.removeAll(removingMethods);
 	}
 
+	@Override
 	public boolean modelExampleClassGenerated(TopLevelClass topLevelClass, IntrospectedTable introspectedTable) {
-		System.out.println("===============开始：修改Example文件================");
+        String tableName = introspectedTable.getFullyQualifiedTable().getIntrospectedTableName();
+		System.out.printf("===============开始：修改表 %s 的Example文件================%n", tableName);
 
 		// 添加example基类
 		topLevelClass.addImportedType(new FullyQualifiedJavaType(baseExampleSuperClass));
@@ -397,11 +402,12 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 
 		innerClasses.removeAll(removingInnerClasses);
 
-		System.out.println("===============完成：修改Example文件================");
+		System.out.printf("===============完成：修改表 %s 的Example文件================%n", tableName);
 
 		return super.modelExampleClassGenerated(topLevelClass, introspectedTable);
 	}
 	
+    @Override
     public boolean modelPrimaryKeyClassGenerated(TopLevelClass topLevelClass,
             IntrospectedTable introspectedTable) {
     	
