@@ -18,13 +18,16 @@ import org.mybatis.generator.api.dom.java.TopLevelClass;
  */
 public class JacksonAnnotationPlugin extends PluginAdapter {
     
-    private Set<String> ignoreColumnsForSerialization;
+    private Set<String> readForJsonColumns;
+    private Set<String> writeForJsonColumns;
     
     @Override
     public boolean validate(List<String> warnings) {
-        String ignoreColumns = properties.getProperty("ignoreColumnsForSerialization", "");
-        ignoreColumnsForSerialization = Set.of(ignoreColumns.split(","));
-        System.out.printf("需要忽略的字段：%s%n", ignoreColumnsForSerialization);
+        readForJsonColumns = Set.of(properties.getProperty("readForJsonColumns", "").split(","));
+        System.out.printf("只读的字段：%s%n", readForJsonColumns);
+
+        writeForJsonColumns = Set.of(properties.getProperty("writeForJsonColumns", "").split(","));
+        System.out.printf("只写的字段：%s%n", writeForJsonColumns);
 
         return true;
     }
@@ -36,14 +39,24 @@ public class JacksonAnnotationPlugin extends PluginAdapter {
                                      IntrospectedTable introspectedTable,
                                      ModelClassType modelClassType) {
 
-        String ignoredColumn = introspectedColumn.getActualColumnName();
-        boolean ignored = ignoreColumnsForSerialization.stream()
+        String columnName = introspectedColumn.getActualColumnName();
+        boolean onlyRead = readForJsonColumns.stream()
                 .anyMatch(s -> {
-                    return s.equalsIgnoreCase(ignoredColumn);
+                    return s.equalsIgnoreCase(columnName);
                 });
 
-        if (ignored) {
-            System.out.printf("序列化时忽略字段: %s%n", ignoredColumn);
+        boolean onlyWrite = writeForJsonColumns.stream()
+                .anyMatch(s -> {
+                    return s.equalsIgnoreCase(columnName);
+                });
+
+        if (onlyRead) {
+            System.out.printf("readForJsonColumn: %s%n", columnName);
+
+            field.addAnnotation("@JsonProperty(access = JsonProperty.Access.READ_ONLY)");
+            topLevelClass.addImportedType("com.fasterxml.jackson.annotation.JsonProperty");
+        } else if (onlyWrite) {
+            System.out.printf("writeForJsonColumn: %s%n", columnName);
 
             field.addAnnotation("@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)");
             topLevelClass.addImportedType("com.fasterxml.jackson.annotation.JsonProperty");
