@@ -2,6 +2,7 @@ package com.github.mybatis.generator.plugin;
 
 import java.sql.Types;
 import java.util.List;
+import java.util.Set;
 
 import org.mybatis.generator.api.IntrospectedColumn;
 import org.mybatis.generator.api.IntrospectedTable;
@@ -16,6 +17,11 @@ import org.mybatis.generator.api.dom.java.TopLevelClass;
  * @author lao king
  */
 public class ModelValidationPlugin extends PluginAdapter {
+    
+    /**
+     * 需要忽略掉验证的字段集合,不要添加 validation
+     */
+    private static Set<String> IGNORE_VALIDATION_COLUMNS = java.util.Set.of("sid");
 
     @Override
     public boolean modelFieldGenerated(Field field, 
@@ -24,9 +30,14 @@ public class ModelValidationPlugin extends PluginAdapter {
             IntrospectedTable introspectedTable, 
             ModelClassType modelClassType) {
         
-        // 遇到 sid 或者 sid 结尾的字段，不要添加 validation
         String columnName = introspectedColumn.getActualColumnName();
-        if (columnName.equalsIgnoreCase("sid") || columnName.toUpperCase().endsWith("_sid")) {
+        String lowerColumnName = columnName.toLowerCase();
+
+        if (IGNORE_VALIDATION_COLUMNS.contains(lowerColumnName)
+                || lowerColumnName.startsWith("created_")
+                || lowerColumnName.startsWith("updated_")
+                || lowerColumnName.startsWith("deleted_")
+                || lowerColumnName.endsWith("_sid")) {
             return true;
         }
 
@@ -34,7 +45,7 @@ public class ModelValidationPlugin extends PluginAdapter {
         addImports(topLevelClass);
 
         // 非空检查
-        if (!introspectedColumn.isNullable()) {
+        if (!introspectedColumn.isNullable() || lowerColumnName.startsWith("is_")) {
             field.addAnnotation("@NotNull(message = \"" + field.getName() + "不能为空\")");
         }
 
@@ -46,7 +57,7 @@ public class ModelValidationPlugin extends PluginAdapter {
         }
 
         // 数字类型检查
-        if (isNumberColumn(introspectedColumn)) {
+        if (isNumberColumn(introspectedColumn) && !lowerColumnName.startsWith("is_")) {
             field.addAnnotation("@Digits(integer = 19, fraction = 0, message = \"必须是有效数字\")");
         }
 
