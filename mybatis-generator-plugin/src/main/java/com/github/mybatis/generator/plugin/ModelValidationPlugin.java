@@ -1,8 +1,10 @@
 package com.github.mybatis.generator.plugin;
 
 import java.sql.Types;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.mybatis.generator.api.IntrospectedColumn;
 import org.mybatis.generator.api.IntrospectedTable;
@@ -21,7 +23,32 @@ public class ModelValidationPlugin extends PluginAdapter {
     /**
      * 需要忽略掉验证的字段集合,不要添加 validation
      */
-    private static Set<String> IGNORE_VALIDATION_COLUMNS = java.util.Set.of("sid");
+    private static Set<String> IGNORE_VALIDATION_COLUMNS = Set.of("sid");
+    
+    /**
+     * 需要忽略掉验证的前缀
+     */
+    private Set<String> ignoreValidationPrefixSet;
+    
+    /**
+     * 需要忽略掉验证的前缀
+     */
+    private Set<String> ignoreValidationPostfixSet;
+
+    @Override
+    public boolean validate(List<String> warnings) {
+        ignoreValidationPrefixSet = Arrays
+                .stream(properties.getProperty("ignoreValidationPrefixSet", "").split(",")).map(String::trim)
+                .collect(Collectors.toSet());
+        System.out.printf("忽略字段的前缀：%s%n", ignoreValidationPrefixSet);
+
+        ignoreValidationPostfixSet = Arrays
+                .stream(properties.getProperty("ignoreValidationPostfixSet", "").split(",")).map(String::trim)
+                .collect(Collectors.toSet());
+        System.out.printf("忽略字段的后缀：%s%n", ignoreValidationPostfixSet);
+
+        return true;
+    }
 
     @Override
     public boolean modelFieldGenerated(Field field, 
@@ -33,12 +60,19 @@ public class ModelValidationPlugin extends PluginAdapter {
         String columnName = introspectedColumn.getActualColumnName();
         String lowerColumnName = columnName.toLowerCase();
 
-        if (IGNORE_VALIDATION_COLUMNS.contains(lowerColumnName)
-                || lowerColumnName.startsWith("created_")
-                || lowerColumnName.startsWith("updated_")
-                || lowerColumnName.startsWith("deleted_")
-                || lowerColumnName.endsWith("_sid")) {
+        if (IGNORE_VALIDATION_COLUMNS.contains(lowerColumnName)) {
             return true;
+        }
+        
+        for (String prefix : ignoreValidationPrefixSet) {
+            if (lowerColumnName.startsWith(prefix)) {
+                return true;
+            }
+        }
+        for (String postfix : ignoreValidationPostfixSet) {
+            if (lowerColumnName.endsWith(postfix)) {
+                return true;
+            }
         }
 
         // 添加必要的import
@@ -110,8 +144,4 @@ public class ModelValidationPlugin extends PluginAdapter {
 //        return name.substring(0, 1).toUpperCase() + name.substring(1);
 //    }
 
-    @Override
-    public boolean validate(List<String> warnings) {
-        return true;
-    }
 }
