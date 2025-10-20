@@ -35,7 +35,7 @@ public class BooleanColumnPlugin extends PluginAdapter {
             IntrospectedColumn introspectedColumn,
             IntrospectedTable introspectedTable, 
             ModelClassType modelClassType) {
-
+/*暂时不给 boolean 类型字段添加默认值
         if (introspectedColumn.getActualColumnName().toLowerCase().startsWith(PREFIX_STRING)
                 && introspectedColumn.getLength() == 1) {
             // 设置Java字段的默认值
@@ -44,7 +44,7 @@ public class BooleanColumnPlugin extends PluginAdapter {
             field.addAnnotation("@Builder.Default");
             topLevelClass.addImportedType("lombok.Builder");
         }
-
+*/
         return true;
     }
     
