@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE generatorConfiguration 
+  PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN" 
+  "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+
+<generatorConfiguration>
+    <properties resource="generatorConfig.properties" />  
+    
+    <context id="mysqlMap" targetRuntime="MyBatis3">
+
+        <plugin type="org.mybatis.generator.plugins.SerializablePlugin" />
+        <plugin type="org.mybatis.generator.plugins.ToStringPlugin" />
+        <plugin type="com.github.mybatis.generator.plugin.EqualsHashCodePlugin" />
+
+		<plugin type="com.github.mybatis.generator.plugin.ModelAndExampleBaseClassPlugin">
+           <property name="modelTargetPackage" value="${modelTargetPackage}"/>
+           <property name="xmlTargetPackage" value="${xmlTargetPackage}"/>
+  		</plugin>
+
+        <plugin type="com.github.mybatis.generator.plugin.ModelAndExampleSubClassPlugin">
+        </plugin>
+        <plugin type="com.github.mybatis.generator.plugin.MapperPlugin">
+           <property name="daoTargetDir" value="${daoTargetDir}"/>
+           <property name="daoTargetPackage" value="${daoTargetPackage}"/>
+        </plugin>
+
+        <plugin type="com.github.mybatis.generator.plugin.MysqlPaginationPlugin">
+        </plugin>
+
+        <plugin type="com.github.mybatis.generator.plugin.BooleanColumnPlugin"/>
+        
+        <commentGenerator>
+            <property name="suppressAllComments" value="true" />
+        </commentGenerator>
+        
+		<jdbcConnection driverClass="${jdbc.driverClassName}"
+			connectionURL="${jdbc.url}"
+			userId="${jdbc.username}" password="${jdbc.password}">
+		</jdbcConnection>
+ 		
+ 
+		<javaTypeResolver>
+			<property name="forceBigDecimals" value="false" />
+		</javaTypeResolver>
+		<!--domain 代码 生成路径 -->
+        <javaModelGenerator targetPackage="${modelTargetPackage}"
+            targetProject="${modelTargetDir}">
+            <property name="enableSubPackages" value="true" />
+            <property name="trimStrings" value="true" />
+        </javaModelGenerator> 
+		
+		<!--mapper 代码 生成路径 -->
+        <sqlMapGenerator targetPackage="${xmlTargetPackage}"
+            targetProject="${xmlTargetDir}">
+            <property name="enableSubPackages" value="true" />
+        </sqlMapGenerator>
+
+        <table tableName="user"></table>
+	</context>
+</generatorConfiguration> 

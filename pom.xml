@@ -21,7 +21,6 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <java.version>21</java.version>
-        <java.release.version>17</java.release.version>
     </properties>
 
     <distributionManagement>
