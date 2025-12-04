@@ -12,10 +12,8 @@ import org.mybatis.generator.api.IntrospectedTable;
 import org.mybatis.generator.api.JavaFormatter;
 import org.mybatis.generator.api.PluginAdapter;
 import org.mybatis.generator.api.ShellCallback;
-import org.mybatis.generator.api.dom.java.CompilationUnit;
-import org.mybatis.generator.api.dom.java.FullyQualifiedJavaType;
-import org.mybatis.generator.api.dom.java.Interface;
-import org.mybatis.generator.api.dom.java.JavaVisibility;
+import org.mybatis.generator.api.dom.java.*;
+import org.mybatis.generator.api.dom.xml.XmlElement;
 import org.mybatis.generator.exception.ShellException;
 import org.mybatis.generator.internal.DefaultShellCallback;
 
@@ -79,6 +77,44 @@ public class MapperPlugin extends PluginAdapter {
     }
 
     @Override
+    public boolean clientSelectByExampleWithBLOBsMethodGenerated(
+            Method method,
+            Interface interfaze,
+            IntrospectedTable introspectedTable) {
+
+        System.out.println("clientSelectByExampleWithBLOBsMethodGenerated");
+
+        return true;
+    }
+
+    @Override
+    public boolean sqlMapSelectByExampleWithBLOBsElementGenerated(XmlElement element,
+                                                           IntrospectedTable introspectedTable) {
+        System.out.println("sqlMapSelectByExampleWithBLOBsElementGenerated");
+        return true;
+    }
+
+    @Override
+    public boolean sqlMapUpdateByExampleWithBLOBsElementGenerated(XmlElement element,
+                                                           IntrospectedTable introspectedTable) {
+        System.out.println("sqlMapUpdateByExampleWithBLOBsElementGenerated");
+        return true;
+    }
+
+    @Override
+    public boolean sqlMapUpdateByPrimaryKeyWithBLOBsElementGenerated(XmlElement element,
+                                                                     IntrospectedTable introspectedTable) {
+        System.out.println("sqlMapUpdateByPrimaryKeyWithBLOBsElementGenerated");
+
+        List<GeneratedJavaFile> generatedJavaFiles = this.contextGenerateAdditionalJavaFiles();
+
+        for (GeneratedJavaFile javaFile : generatedJavaFiles) {
+            System.out.println("AdditionaljavaFile:" + javaFile.getFileName());
+        }
+        return true;
+    }
+
+    @Override
     public List<GeneratedJavaFile> contextGenerateAdditionalJavaFiles(IntrospectedTable introspectedTable) {
         String tableName = introspectedTable.getFullyQualifiedTable().getIntrospectedTableName();
         System.out.printf("===============开始：生成表 %s 的Mapper文件================%n", tableName);
@@ -101,6 +137,8 @@ public class MapperPlugin extends PluginAdapter {
             System.out.println("primaryKey Type:" + pkType);
         }
 
+        boolean hasBLOBColumns = introspectedTable.hasBLOBColumns();
+
         List<GeneratedJavaFile> mapperJavaFiles = new ArrayList<GeneratedJavaFile>();
         for (GeneratedJavaFile javaFile : introspectedTable.getGeneratedJavaFiles()) {
 
@@ -108,6 +146,8 @@ public class MapperPlugin extends PluginAdapter {
             FullyQualifiedJavaType baseModelJavaType = unit.getType();
 
             String shortName = baseModelJavaType.getShortName();
+
+            System.out.printf("mapper-shortName: %s", shortName);
 
             // 针对Example或者 联合主键类(以Key字符串结尾)类不要生成Mapper
             if (shortName.endsWith("Example") || shortName.endsWith("Key")) {
@@ -144,6 +184,21 @@ public class MapperPlugin extends PluginAdapter {
             mapperInterface.addImportedType(new FullyQualifiedJavaType(MAPPER_ANNOTATION));
             mapperInterface.addAnnotation("@Mapper");
 
+            if (hasBLOBColumns) {
+                System.out.println("存在 blob 字段，需要添加对应的 blob 方法");
+                mapperInterface.addImportedType(new FullyQualifiedJavaType("org.apache.ibatis.annotations.Param"));
+                mapperInterface.addImportedType(new FullyQualifiedJavaType("java.util.List"));
+                // 添加3个 blob 对应的方法
+                mapperInterface.addMethod(
+                        generateSelectByExampleWithBLOBs(subModelJavaType, subModelExampleJavaType));
+                mapperInterface.addMethod(
+                        generateUpdateByExampleWithBLOBs(subModelJavaType, subModelExampleJavaType));
+                mapperInterface.addMethod(
+                        generateUpdateByPrimaryKeyWithBLOBs(subModelJavaType, subModelExampleJavaType));
+            } else {
+                System.out.println("没有 blob 字段，不需要添加对应的 blob 方法");
+            }
+
             try {
                 GeneratedJavaFile mapperJavafile = new GeneratedJavaFile(mapperInterface, daoTargetDir, javaFormatter);
 
@@ -165,6 +220,50 @@ public class MapperPlugin extends PluginAdapter {
         System.out.printf("===============结束：生成表 %s 的Mapper文件================%n", tableName);
 
         return mapperJavaFiles;
+    }
+
+    private Method generateUpdateByPrimaryKeyWithBLOBs(FullyQualifiedJavaType subModelJavaType, FullyQualifiedJavaType subModelExampleJavaType) {
+        Method m = new Method("updateByPrimaryKeyWithBLOBs");
+        m.setVisibility(JavaVisibility.PUBLIC);
+        m.setAbstract(true);
+
+        Parameter p1 = new Parameter(subModelJavaType,"record");
+        m.addParameter(p1);
+
+        m.setReturnType(new FullyQualifiedJavaType("int"));
+        return m;
+    }
+
+    private static Method generateUpdateByExampleWithBLOBs(FullyQualifiedJavaType subModelJavaType, FullyQualifiedJavaType subModelExampleJavaType) {
+        Method m = new Method("updateByExampleWithBLOBs");
+        m.setVisibility(JavaVisibility.PUBLIC);
+        m.setAbstract(true);
+
+        Parameter p1 = new Parameter(subModelJavaType,
+                "record");
+        p1.addAnnotation("@Param(\"record\")");
+        m.addParameter(p1);
+
+        Parameter p2 = new Parameter(subModelExampleJavaType,
+                "example");
+        p2.addAnnotation("@Param(\"example\")");
+        m.addParameter(p2);
+
+        m.setReturnType(new FullyQualifiedJavaType("int"));
+        return m;
+    }
+
+    private static Method generateSelectByExampleWithBLOBs(FullyQualifiedJavaType subModelJavaType,
+                                         FullyQualifiedJavaType subModelExampleJavaType) {
+        Method m = new Method("selectByExampleWithBLOBs");
+        m.setVisibility(JavaVisibility.PUBLIC);
+        m.setAbstract(true);
+        Parameter p1 = new Parameter(subModelExampleJavaType,
+                "example");
+        m.addParameter(p1);
+        FullyQualifiedJavaType returnType = new FullyQualifiedJavaType("List<" + subModelJavaType.getShortName() + ">");
+        m.setReturnType(returnType);
+        return m;
     }
 
     private String getSubModelType(FullyQualifiedJavaType fullyQualifiedJavaType) {
