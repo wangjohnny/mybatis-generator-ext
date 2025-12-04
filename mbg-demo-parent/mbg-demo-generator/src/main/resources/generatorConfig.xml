@@ -13,10 +13,6 @@
         <property name="beginningDelimiter" value="`"/>
         <property name="endingDelimiter" value="`"/>
 
-        <plugin type="com.github.mybatis.generator.plugin.TableFilterPlugin">
-            <property name="includedTables" value="${includedTables}"/>
-        </plugin>
-
         <plugin type="org.mybatis.generator.plugins.SerializablePlugin"/>
 
         <plugin type="com.github.mybatis.generator.plugin.ModelAndExampleBaseClassPlugin">
