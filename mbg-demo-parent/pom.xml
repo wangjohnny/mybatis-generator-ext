@@ -26,9 +26,11 @@
     </properties>
 
     <modules>
+        <module>mbg-demo-generator</module>
         <module>mbg-demo-model</module>
         <module>mbg-demo-mapper</module>
         <module>mbg-demo-business</module>
+        <module>mbg-demo-webapp</module>
     </modules>
 
     <dependencies>

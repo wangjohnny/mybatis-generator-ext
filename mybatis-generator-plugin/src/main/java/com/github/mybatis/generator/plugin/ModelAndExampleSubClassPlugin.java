@@ -1,5 +1,6 @@
 package com.github.mybatis.generator.plugin;
 
+import static java.lang.System.out;
 import static org.mybatis.generator.internal.util.StringUtility.stringHasValue;
 
 import java.io.File;
@@ -67,7 +68,7 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
     @Override
     public List<GeneratedJavaFile> contextGenerateAdditionalJavaFiles(IntrospectedTable introspectedTable) {
         String tableName = introspectedTable.getFullyQualifiedTable().getIntrospectedTableName();
-        System.out.printf("===============开始：生成表 %s 的Model子类文件================%n", tableName);
+        out.printf("===============开始：生成表 %s 的Model子类文件================%n", tableName);
 
         JavaFormatter javaFormatter = context.getJavaFormatter();
 
@@ -134,7 +135,7 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
 
         }
 
-        System.out.printf("===============结束：生成表 %s 的Model子类文件================%n", tableName);
+        out.printf("===============结束：生成表 %s 的Model子类文件================%n", tableName);
 
         return classJavaFiles;
     }

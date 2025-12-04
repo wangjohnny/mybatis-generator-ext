@@ -8,40 +8,62 @@
     
     <context id="mysqlMap" targetRuntime="MyBatis3">
 
-        <plugin type="org.mybatis.generator.plugins.SerializablePlugin" />
-        <plugin type="org.mybatis.generator.plugins.ToStringPlugin" />
-        <plugin type="com.github.mybatis.generator.plugin.EqualsHashCodePlugin" />
+        <property name="javaFileEncoding" value="UTF-8"/>
+        <property name="autoDelimitKeywords" value="true"/>
+        <property name="beginningDelimiter" value="`"/>
+        <property name="endingDelimiter" value="`"/>
 
-		<plugin type="com.github.mybatis.generator.plugin.ModelAndExampleBaseClassPlugin">
-           <property name="modelTargetPackage" value="${modelTargetPackage}"/>
-           <property name="xmlTargetPackage" value="${xmlTargetPackage}"/>
-  		</plugin>
+        <plugin type="com.github.mybatis.generator.plugin.TableFilterPlugin">
+            <property name="includedTables" value="${includedTables}"/>
+        </plugin>
+
+        <plugin type="org.mybatis.generator.plugins.SerializablePlugin"/>
+
+        <plugin type="com.github.mybatis.generator.plugin.ModelAndExampleBaseClassPlugin">
+            <property name="modelTargetPackage" value="${modelTargetPackage}"/>
+            <property name="xmlTargetPackage" value="${xmlTargetPackage}"/>
+        </plugin>
 
         <plugin type="com.github.mybatis.generator.plugin.ModelAndExampleSubClassPlugin">
         </plugin>
         <plugin type="com.github.mybatis.generator.plugin.MapperPlugin">
-           <property name="daoTargetDir" value="${daoTargetDir}"/>
-           <property name="daoTargetPackage" value="${daoTargetPackage}"/>
+            <property name="daoTargetDir" value="${daoTargetDir}"/>
+            <property name="daoTargetPackage" value="${daoTargetPackage}"/>
         </plugin>
 
-        <plugin type="com.github.mybatis.generator.plugin.MysqlPaginationPlugin">
+        <plugin type="com.github.mybatis.generator.plugin.ModelValidationPlugin">
+            <property name="ignoreValidationPrefixSet" value="created_,updated_,deleted_"/>
+            <property name="ignoreValidationPostfixSet" value="_sid"/>
         </plugin>
 
         <plugin type="com.github.mybatis.generator.plugin.BooleanColumnPlugin"/>
-        
+
+        <plugin type="com.github.mybatis.generator.plugin.ColumnDynamicAliasAndPrefixPlugin"/>
+
+        <plugin type="com.github.mybatis.generator.plugin.SwaggerAnnotationPlugin"/>
+        <plugin type="com.github.mybatis.generator.plugin.LombokAnnotationPlugin"/>
+        <plugin type="com.github.mybatis.generator.plugin.JacksonAnnotationPlugin">
+            <property name="readForJsonColumns"
+                      value="created_by,created_timestamp,updated_by,updated_timestamp,deleted_by,deleted_timestamp"/>
+            <property name="writeForJsonColumns" value="password,is_deleted"/>
+        </plugin>
+
         <commentGenerator>
-            <property name="suppressAllComments" value="true" />
+            <property name="suppressAllComments" value="true"/>
         </commentGenerator>
-        
-		<jdbcConnection driverClass="${jdbc.driverClassName}"
-			connectionURL="${jdbc.url}"
-			userId="${jdbc.username}" password="${jdbc.password}">
-		</jdbcConnection>
- 		
- 
-		<javaTypeResolver>
-			<property name="forceBigDecimals" value="false" />
-		</javaTypeResolver>
+
+        <jdbcConnection driverClass="${jdbc.driverClassName}"
+                        connectionURL="${jdbc.url}"
+                        userId="${jdbc.username}"
+                        password="${jdbc.password}">
+        </jdbcConnection>
+
+        <javaTypeResolver>
+            <property name="forceBigDecimals" value="false"/>
+            <property name="useJSR310Types" value="true"/>
+        </javaTypeResolver>
+
+
 		<!--domain 代码 生成路径 -->
         <javaModelGenerator targetPackage="${modelTargetPackage}"
             targetProject="${modelTargetDir}">
@@ -56,5 +78,6 @@
         </sqlMapGenerator>
 
         <table tableName="user"></table>
+        <table tableName="role"></table>
 	</context>
 </generatorConfiguration> 

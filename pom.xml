@@ -12,6 +12,7 @@
         <module>mybatis-model</module>
         <module>mybatis-mapper</module>
         <module>mybatis-generator-plugin</module>
+        <module>mbg-demo-parent</module>
     </modules>
 
     <properties>

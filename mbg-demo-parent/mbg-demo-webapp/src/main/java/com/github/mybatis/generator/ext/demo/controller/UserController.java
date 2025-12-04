@@ -7,11 +7,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.github.mybatis.generator.ext.demo.model.User;
 import com.github.mybatis.generator.ext.demo.service.UserService;
 
-@Controller
+@RestController
 @RequestMapping("/user")
 public class UserController {
 
