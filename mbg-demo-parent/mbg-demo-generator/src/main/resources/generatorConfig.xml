@@ -23,8 +23,8 @@
         <plugin type="com.github.mybatis.generator.plugin.ModelAndExampleSubClassPlugin">
         </plugin>
         <plugin type="com.github.mybatis.generator.plugin.MapperPlugin">
-            <property name="daoTargetDir" value="${daoTargetDir}"/>
-            <property name="daoTargetPackage" value="${daoTargetPackage}"/>
+            <property name="mapperTargetDir" value="${mapperTargetDir}"/>
+            <property name="mapperTargetPackage" value="${mapperTargetPackage}"/>
         </plugin>
 
         <plugin type="com.github.mybatis.generator.plugin.ModelValidationPlugin">

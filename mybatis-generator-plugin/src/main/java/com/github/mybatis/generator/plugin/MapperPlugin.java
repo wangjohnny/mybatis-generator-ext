@@ -30,9 +30,9 @@ public class MapperPlugin extends PluginAdapter {
     
     private ShellCallback shellCallback = null;
 
-    private String daoTargetDir;
+    private String mapperTargetDir;
 
-    private String daoTargetPackage;
+    private String mapperTargetPackage;
 
     /**
      * Model基类文件包名
@@ -52,11 +52,11 @@ public class MapperPlugin extends PluginAdapter {
 
     @Override
     public boolean validate(List<String> warnings) {
-        daoTargetDir = properties.getProperty("daoTargetDir");
-        boolean valid = stringHasValue(daoTargetDir);
+        mapperTargetDir = properties.getProperty("mapperTargetDir");
+        boolean valid = stringHasValue(mapperTargetDir);
 
-        daoTargetPackage = properties.getProperty("daoTargetPackage");
-        boolean valid2 = stringHasValue(daoTargetPackage);
+        mapperTargetPackage = properties.getProperty("mapperTargetPackage");
+        boolean valid2 = stringHasValue(mapperTargetPackage);
 
         daoSuperClass = properties.getProperty("daoSuperClass");
         if (!stringHasValue(daoSuperClass)) {
@@ -161,7 +161,7 @@ public class MapperPlugin extends PluginAdapter {
 
             String subModelName = shortName.replace(baseModelNamePrefix, "");
 
-            Interface mapperInterface = new Interface(daoTargetPackage + "." + subModelName + "Mapper");
+            Interface mapperInterface = new Interface(mapperTargetPackage + "." + subModelName + "Mapper");
 
             mapperInterface.setVisibility(JavaVisibility.PUBLIC);
             mapperInterface.addJavaDocLine(" /**");
@@ -200,9 +200,11 @@ public class MapperPlugin extends PluginAdapter {
             }
 
             try {
-                GeneratedJavaFile mapperJavafile = new GeneratedJavaFile(mapperInterface, daoTargetDir, javaFormatter);
+                GeneratedJavaFile mapperJavafile = new GeneratedJavaFile(mapperInterface,
+                        mapperTargetDir, javaFormatter);
 
-                File mapperDir = shellCallback.getDirectory(daoTargetDir, daoTargetPackage);
+                File mapperDir = shellCallback.getDirectory(mapperTargetDir,
+                        mapperTargetPackage);
 
                 File mapperFile = new File(mapperDir, mapperJavafile.getFileName());
 
