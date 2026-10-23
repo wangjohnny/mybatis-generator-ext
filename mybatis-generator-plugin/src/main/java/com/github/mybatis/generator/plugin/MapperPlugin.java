@@ -25,7 +25,7 @@ import org.mybatis.generator.internal.DefaultShellCallback;
  */
 public class MapperPlugin extends PluginAdapter {
 
-    private static final String DEFAULT_DAO_SUPER_CLASS = "com.github.mybatis.mapper.GenericMapper";
+    private static final String DEFAULT_MAPPER_SUPER_CLASS = "com.github.mybatis.mapper.GenericMapper";
     private static final String MAPPER_ANNOTATION = "org.apache.ibatis.annotations.Mapper";
     
     private ShellCallback shellCallback = null;
@@ -44,7 +44,7 @@ public class MapperPlugin extends PluginAdapter {
      */
     private String baseModelNamePrefix;
 
-    private String daoSuperClass;
+    private String mapperSuperClass;
 
     public MapperPlugin() {
         shellCallback = new DefaultShellCallback(false);
@@ -58,9 +58,9 @@ public class MapperPlugin extends PluginAdapter {
         mapperTargetPackage = properties.getProperty("mapperTargetPackage");
         boolean valid2 = stringHasValue(mapperTargetPackage);
 
-        daoSuperClass = properties.getProperty("daoSuperClass");
-        if (!stringHasValue(daoSuperClass)) {
-            daoSuperClass = DEFAULT_DAO_SUPER_CLASS;
+        mapperSuperClass = properties.getProperty("mapperSuperClass");
+        if (!stringHasValue(mapperSuperClass)) {
+            mapperSuperClass = DEFAULT_MAPPER_SUPER_CLASS;
         }
 
         baseModelPackage = properties.getProperty("baseModelPackage");
@@ -173,13 +173,13 @@ public class MapperPlugin extends PluginAdapter {
             FullyQualifiedJavaType subModelExampleJavaType = new FullyQualifiedJavaType(subModelExampleType);
             mapperInterface.addImportedType(subModelExampleJavaType);
 
-            FullyQualifiedJavaType daoSuperType = new FullyQualifiedJavaType(daoSuperClass);
+            FullyQualifiedJavaType mapperSuperType = new FullyQualifiedJavaType(mapperSuperClass);
             // 添加泛型支持
-            daoSuperType.addTypeArgument(subModelJavaType);
-            daoSuperType.addTypeArgument(subModelExampleJavaType);
-            daoSuperType.addTypeArgument(pkType);
-            mapperInterface.addImportedType(daoSuperType);
-            mapperInterface.addSuperInterface(daoSuperType);
+            mapperSuperType.addTypeArgument(subModelJavaType);
+            mapperSuperType.addTypeArgument(subModelExampleJavaType);
+            mapperSuperType.addTypeArgument(pkType);
+            mapperInterface.addImportedType(mapperSuperType);
+            mapperInterface.addSuperInterface(mapperSuperType);
 
             mapperInterface.addImportedType(new FullyQualifiedJavaType(MAPPER_ANNOTATION));
             mapperInterface.addAnnotation("@Mapper");
