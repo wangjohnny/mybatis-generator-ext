@@ -11,6 +11,7 @@
         <module>mybatis-pagination</module>
         <module>mybatis-model</module>
         <module>mybatis-mapper</module>
+        <module>mybatis-service</module>
         <module>mybatis-generator-plugin</module>
     </modules>
 

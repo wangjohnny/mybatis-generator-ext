@@ -29,7 +29,7 @@
 
         <plugin type="com.github.mybatis.generator.plugin.ModelValidationPlugin">
             <property name="ignoreValidationPrefixSet" value="created_,updated_,deleted_"/>
-            <property name="ignoreValidationPostfixSet" value="_sid"/>
+            <property name="ignoreValidationPostfixSet" value="_id"/>
         </plugin>
 
         <plugin type="com.github.mybatis.generator.plugin.BooleanColumnPlugin"/>

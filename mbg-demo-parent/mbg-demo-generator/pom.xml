@@ -17,7 +17,6 @@
             <plugin>
                 <groupId>org.mybatis.generator</groupId>
                 <artifactId>mybatis-generator-maven-plugin</artifactId>
-                <version>1.4.2</version>
                 <configuration>
                     <verbose>true</verbose>
                     <overwrite>true</overwrite>
@@ -26,12 +25,12 @@
                     <dependency>
                         <groupId>org.hsqldb</groupId>
                         <artifactId>hsqldb</artifactId>
-                        <version>2.2.9</version>
+                        <version>${hsqldb.version}</version>
                     </dependency>
                     <dependency>
                         <groupId>com.github.mybatis.generator.ext</groupId>
                         <artifactId>mybatis-generator-plugin</artifactId>
-                        <version>1.5.1-SNAPSHOT</version>
+                        <version>${mbg-ext.version}</version>
                     </dependency>
                 </dependencies>
             </plugin>

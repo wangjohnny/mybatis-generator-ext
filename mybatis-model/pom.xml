@@ -16,7 +16,7 @@
         <dependency>
             <groupId>com.github.mybatis.generator.ext</groupId>
             <artifactId>mybatis-pagination</artifactId>
-            <version>1.5.1-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
 </project>

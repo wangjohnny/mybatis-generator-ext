@@ -23,7 +23,7 @@ public class ModelValidationPlugin extends PluginAdapter {
     /**
      * 需要忽略掉验证的字段集合,不要添加 validation
      */
-    private static Set<String> IGNORE_VALIDATION_COLUMNS = Set.of("sid");
+    private static Set<String> IGNORE_VALIDATION_COLUMNS = Set.of("id");
     
     /**
      * 需要忽略掉验证的前缀

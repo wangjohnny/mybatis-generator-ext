@@ -18,11 +18,22 @@
     <url>http://maven.apache.org</url>
 
     <properties>
+        <!-- 依赖的 mybatis-generator-ext 版本，升级时只需修改这里 -->
+        <mbg-ext.version>1.5.1-SNAPSHOT</mbg-ext.version>
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <skipTests>true</skipTests>
         <java.version>21</java.version>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
+
+        <!-- 第三方依赖版本 -->
+        <commons-dbcp.version>1.4</commons-dbcp.version>
+        <commons-lang3.version>3.3.2</commons-lang3.version>
+        <hsqldb.version>2.2.9</hsqldb.version>
+        <lombok.version>1.18.38</lombok.version>
+        <swagger-annotations.version>2.2.39</swagger-annotations.version>
+        <mybatis-generator-maven-plugin.version>1.4.2</mybatis-generator-maven-plugin.version>
     </properties>
 
     <modules>
@@ -33,23 +44,112 @@
         <module>mbg-demo-webapp</module>
     </modules>
 
+    <!-- 统一依赖版本管理，子模块声明依赖时无需再写 version -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- 本项目内部模块 -->
+            <dependency>
+                <groupId>com.github.mybatis.generator.ext</groupId>
+                <artifactId>mbg-demo-model</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.mybatis.generator.ext</groupId>
+                <artifactId>mbg-demo-mapper</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.mybatis.generator.ext</groupId>
+                <artifactId>mbg-demo-business</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.mybatis.generator.ext</groupId>
+                <artifactId>mbg-demo-webapp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- mybatis-generator-ext 提供的模块 -->
+            <dependency>
+                <groupId>com.github.mybatis.generator.ext</groupId>
+                <artifactId>mybatis-pagination</artifactId>
+                <version>${mbg-ext.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.mybatis.generator.ext</groupId>
+                <artifactId>mybatis-model</artifactId>
+                <version>${mbg-ext.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.mybatis.generator.ext</groupId>
+                <artifactId>mybatis-mapper</artifactId>
+                <version>${mbg-ext.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.mybatis.generator.ext</groupId>
+                <artifactId>mybatis-service</artifactId>
+                <version>${mbg-ext.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.mybatis.generator.ext</groupId>
+                <artifactId>mybatis-generator-plugin</artifactId>
+                <version>${mbg-ext.version}</version>
+            </dependency>
+
+            <!-- 第三方依赖 -->
+            <dependency>
+                <groupId>commons-dbcp</groupId>
+                <artifactId>commons-dbcp</artifactId>
+                <version>${commons-dbcp.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons-lang3.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hsqldb</groupId>
+                <artifactId>hsqldb</artifactId>
+                <version>${hsqldb.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations-jakarta</artifactId>
+                <version>${swagger-annotations.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>commons-dbcp</groupId>
             <artifactId>commons-dbcp</artifactId>
-            <version>1.4</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.3.2</version>
         </dependency>
         <dependency>
             <groupId>org.hsqldb</groupId>
             <artifactId>hsqldb</artifactId>
-            <version>2.2.9</version>
         </dependency>
-
     </dependencies>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.mybatis.generator</groupId>
+                    <artifactId>mybatis-generator-maven-plugin</artifactId>
+                    <version>${mybatis-generator-maven-plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
 </project>
