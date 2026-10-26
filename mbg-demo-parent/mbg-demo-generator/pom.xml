@@ -31,7 +31,7 @@
                     <dependency>
                         <groupId>com.github.mybatis.generator.ext</groupId>
                         <artifactId>mybatis-generator-plugin</artifactId>
-                        <version>1.5.0-SNAPSHOT</version>
+                        <version>1.5.1-SNAPSHOT</version>
                     </dependency>
                 </dependencies>
             </plugin>

@@ -11,7 +11,7 @@ import org.mybatis.generator.api.dom.xml.XmlElement;
 /**
  * Mysql 分页插件
  * 
- * @author Johnny
+ * @author oking
  */
 public class MysqlPaginationPlugin extends PluginAdapter {
 

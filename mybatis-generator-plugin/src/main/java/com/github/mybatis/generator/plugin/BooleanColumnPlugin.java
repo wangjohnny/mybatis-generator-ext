@@ -13,7 +13,7 @@ import org.mybatis.generator.api.dom.java.TopLevelClass;
  * 
  * 将数据库中 is_XXXX 开头的字段，并且长度为1，做如下处理 1.字段类型改为 boolean，字段为 XXXX，
  * 
- * @author Johnny
+ * @author oking
  *
  */
 public class BooleanColumnPlugin extends PluginAdapter {

@@ -5,7 +5,7 @@ import com.github.mybatis.pagination.Pagination;
 /**
  * 所有Example的基类，包括分页属性
  * 
- * @author Johnny
+ * @author oking
  *
  */
 public class BaseModelExample {

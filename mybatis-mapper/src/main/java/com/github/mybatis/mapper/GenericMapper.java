@@ -9,7 +9,7 @@ import org.apache.ibatis.annotations.Param;
 import com.github.mybatis.model.BaseModelExample;
 
 /**
- * @author johnny
+ * @author oking
  *
  * @param <T>
  * @param <TE>

@@ -5,21 +5,21 @@ import java.io.Serializable;
 /**
  * 所有Model的基类，包括分页属性
  * 
- * @author Johnny
+ * @author oking
  *
  */
 public class BaseModel<PK extends Serializable> implements Serializable {
 
-    private static final long serialVersionUID = -6590882888801386323L;
+    private static final long serialVersionUID = 1L;
 
-    protected PK sid;
+    protected PK id;
 
-	public PK getSid() {
-		return sid;
+	public PK getId() {
+		return id;
 	}
 
-	public void setSid(PK sid) {
-		this.sid = sid;
+	public void setId(PK id) {
+		this.id = id;
 	}
 
 }

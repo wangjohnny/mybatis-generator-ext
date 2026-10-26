@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * 
- * @author Johnny
+ * @author oking
  *
  */
 public class Criterion {

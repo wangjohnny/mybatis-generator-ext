@@ -20,7 +20,7 @@ import org.mybatis.generator.internal.DefaultShellCallback;
 /**
  * 生成 Mapper 类
  * 
- * @author Johnny
+ * @author oking
  *
  */
 public class MapperPlugin extends PluginAdapter {

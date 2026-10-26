@@ -41,7 +41,7 @@ import org.mybatis.generator.internal.DefaultShellCallback;
  * baseModelPackage 为生成新的类文件的包名</br>
  * extXmlPackage 包名</br>
  * 
- * @author Johnny
+ * @author oking
  *
  **/
 public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
