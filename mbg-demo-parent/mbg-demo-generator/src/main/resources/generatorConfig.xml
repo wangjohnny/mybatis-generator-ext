@@ -18,6 +18,8 @@
         <plugin type="com.github.mybatis.generator.plugin.ModelAndExampleBaseClassPlugin">
             <property name="modelTargetPackage" value="${modelTargetPackage}"/>
             <property name="xmlTargetPackage" value="${xmlTargetPackage}"/>
+            <!-- xml的namespace包名，缺省时取下面的mapperTargetPackage，即与Mapper类的包名一致 -->
+            <property name="mapperTargetPackage" value="${mapperTargetPackage}"/>
         </plugin>
 
         <plugin type="com.github.mybatis.generator.plugin.ModelAndExampleSubClassPlugin">
