@@ -39,8 +39,9 @@ import org.mybatis.generator.internal.DefaultShellCallback;
  * 使用方法配置与在generatorConfig.xml中其中</br>
  * baseModelNamePrefix 为新生成的类文件的前置关键字</br>
  * baseModelPackage 为生成新的类文件的包名</br>
- * extXmlPackage 包名</br>
- * xmlTargetPackage 为xml文件存放的包名，决定xml文件的路径</br>
+ * extXmlPackage 已废弃，改为generatedXmlPackage：生成xml文件所在的子包名，缺省为generated</br>
+ * xmlTargetPackage 为xml文件存放的包名，扩展xml文件直接放在这个目录下，
+ * 生成的xml文件放在它的generated子目录下，两者是父子目录的关系</br>
  * xml文件里mapper元素的namespace跟随mapperTargetPackage(Mapper类的包名)，与xml文件的存放路径无关，
  * 未配置mapperTargetPackage时退回xmlTargetPackage</br>
  * 
@@ -52,7 +53,7 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 	public final static String DEFAULT_BASE_MODEL_PACKAGE = "base";
 	public final static String DEFAULT_BASE_MODEL_NAME_PREFIX = "Base";
 
-	private final static String DEFAULT_EXT_XML_PACKAGE = "ext";
+	private final static String DEFAULT_GENERATED_XML_PACKAGE = "generated";
 
 	private ShellCallback shellCallback = null;
 
@@ -60,7 +61,6 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 	 * Model的基类
 	 */
     private String baseModelSuperClass = "com.github.mybatis.model.BaseModel";
-//	private String baseModelSuperInterface = "com.github.mybatis.model.IModel";
 
 	/**
 	 * Example的基类
@@ -88,9 +88,10 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 	private String modelPKColumnName = "id";
 
 	/**
-	 * 扩展xml文件包名
+	 * 生成的xml文件(每次覆盖)存放的包名，是xmlTargetPackage下面的子包。
+	 * 扩展xml文件放在xmlTargetPackage本身，两者是父子目录的关系
 	 */
-	private String fullExtXmlPackage;
+	private String fullGeneratedXmlPackage;
 
 	/**
 	 * xml文件存放的包名，只决定xml文件在磁盘上的路径，与namespace无关
@@ -149,6 +150,11 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 		String newPrimaryKeyClassName = fullModelPackage + "." + primaryKeyClassName.substring(indexOfLastDot + 1);
 		introspectedTable.setPrimaryKeyType(newPrimaryKeyClassName);
 
+		// MBG默认把生成的xml放在sqlMapGenerator的targetPackage下，这里改到它的子包(generated)里，
+		// 把外层目录让给扩展xml文件，于是生成的文件与扩展文件形成父子目录，
+		// 例如 mapper/generated/UserMapper.xml 与 mapper/UserMapper.xml
+		introspectedTable.setMyBatis3XmlMapperPackage(fullGeneratedXmlPackage);
+
 		// 单独设定xml文件的namespace，让它不再受xml文件存放包名(xmlTargetPackage)的影响。
 		// 文件写到哪个目录由MBG依据xmlTargetPackage自行决定，这里只改namespace的取值
 		String xmlNamespace = genXmlNamespace(introspectedTable);
@@ -204,11 +210,13 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 		}
 		System.out.printf("xml文件存放包名:%s, xml文件namespace包名:%s%n", xmlTargetPackage, xmlNamespacePackage);
 
-		String extXmlPackage = properties.getProperty("extXmlPackage");
-		if (stringHasValue(extXmlPackage)) {
-			fullExtXmlPackage = xmlTargetPackage + "." + extXmlPackage;
+		// 生成的xml文件放在xmlTargetPackage的子包(默认generated)下，扩展xml文件放在xmlTargetPackage
+		// 本身，两者是父子目录关系：mapper/generated/UserMapper.xml 与 mapper/UserMapper.xml
+		String generatedXmlPackage = properties.getProperty("generatedXmlPackage");
+		if (stringHasValue(generatedXmlPackage)) {
+			fullGeneratedXmlPackage = xmlTargetPackage + "." + generatedXmlPackage;
 		} else {
-			fullExtXmlPackage = xmlTargetPackage + "." + DEFAULT_EXT_XML_PACKAGE;
+			fullGeneratedXmlPackage = xmlTargetPackage + "." + DEFAULT_GENERATED_XML_PACKAGE;
 		}
 
         String baseModelSuperClazz = properties.getProperty("baseModelSuperClass");
@@ -301,12 +309,13 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 			String targetProject = xmlFile.getTargetProject();
 			
 			try {
-				File directory = shellCallback.getDirectory(targetProject, fullExtXmlPackage);
+				// 扩展xml文件放在xmlTargetPackage下，与存放生成文件的generated目录同级
+				File directory = shellCallback.getDirectory(targetProject, xmlTargetPackage);
 
 				File targetFile = new File(directory, fileName);
 
 				if (!targetFile.exists()) {// 需要判断这个xml文件是否存在，若存在则不生成
-					GeneratedXmlFile gxf = new GeneratedXmlFile(document, fileName, fullExtXmlPackage, targetProject,
+					GeneratedXmlFile gxf = new GeneratedXmlFile(document, fileName, xmlTargetPackage, targetProject,
 							true, context.getXmlFormatter());
 					allXmlFiles.add(gxf);
 				}
