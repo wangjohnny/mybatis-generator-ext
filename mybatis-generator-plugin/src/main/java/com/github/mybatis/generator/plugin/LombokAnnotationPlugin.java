@@ -51,12 +51,25 @@ public class LombokAnnotationPlugin extends PluginAdapter {
                                      IntrospectedTable introspectedTable,
                                      ModelClassType modelClassType) {
 
-        String fieldName = field.getName();
-        if (fieldName.equals("sid")) {
+        // 主键字段参与 equals 与 hashCode，按主键列判断，不依赖固定的主键列名(sid / id 均可)
+        if (isPrimaryKeyColumn(introspectedColumn, introspectedTable)) {
             field.addAnnotation("@EqualsAndHashCode.Include");
         }
 
         return true;
+    }
+
+    /**
+     * 判断字段对应的列是否为主键列
+     *
+     * @param column 字段对应的列
+     * @param introspectedTable 表的元数据
+     * @return 是主键列返回 true
+     */
+    private boolean isPrimaryKeyColumn(IntrospectedColumn column, IntrospectedTable introspectedTable) {
+        String columnName = column.getActualColumnName();
+        return introspectedTable.getPrimaryKeyColumns().stream()
+                .anyMatch(pkColumn -> pkColumn.getActualColumnName().equals(columnName));
     }
 
     @Override
