@@ -19,15 +19,38 @@ public class MysqlPaginationPlugin extends PluginAdapter {
 	public boolean sqlMapSelectByExampleWithoutBLOBsElementGenerated(
 	        XmlElement element, IntrospectedTable introspectedTable) {
 
+		addPaginationElement(element);
+
+		// 分页片段已追加，保留原 select 元素
+		return true;
+	}
+
+	/**
+	 * 带 BLOB 字段的表会走 selectByExampleWithBLOBs，这里同样要追加分页片段，
+	 * 否则这类表的分页不生效
+	 */
+	@Override
+	public boolean sqlMapSelectByExampleWithBLOBsElementGenerated(
+	        XmlElement element, IntrospectedTable introspectedTable) {
+
+		addPaginationElement(element);
+
+		// 分页片段已追加，保留原 select 元素
+		return true;
+	}
+
+	/**
+	 * 在 select 元素末尾追加分页片段，生成 limit 语句
+	 *
+	 * @param element select 元素
+	 */
+	private void addPaginationElement(XmlElement element) {
 		XmlElement pageElement = new XmlElement("if");
 		pageElement.addAttribute(new Attribute("test",
 		        "pagination != null and pagination.begin >= 0"));
 		pageElement.addElement(new TextElement(
 		        "limit #{pagination.begin}, #{pagination.pageSize}"));
 		element.getElements().add(pageElement);
-
-		return super.sqlMapUpdateByExampleWithoutBLOBsElementGenerated(element,
-		        introspectedTable);
 	}
 
 	/*
