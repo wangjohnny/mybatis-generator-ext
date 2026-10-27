@@ -38,7 +38,7 @@ import org.mybatis.generator.internal.DefaultShellCallback;
  * <p>
  * 使用方法配置与在generatorConfig.xml中其中</br>
  * baseModelNamePrefix 为新生成的类文件的前置关键字</br>
- * baseModelPackage 为生成新的类文件的包名</br>
+ * baseModelPackage 为生成新的类文件的包名，缺省为generated，表明这些类是生成的</br>
  * extXmlPackage 已废弃，改为generatedXmlPackage：生成xml文件所在的子包名，缺省为generated</br>
  * xmlTargetPackage 为xml文件存放的包名，扩展xml文件直接放在这个目录下，
  * 生成的xml文件放在它的generated子目录下，两者是父子目录的关系</br>
@@ -50,7 +50,10 @@ import org.mybatis.generator.internal.DefaultShellCallback;
  **/
 public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 
-	public final static String DEFAULT_BASE_MODEL_PACKAGE = "base";
+	/**
+	 * 生成的Model类所在的子包，缺省为generated，用包名表明这些类是工具生成的
+	 */
+	public final static String DEFAULT_BASE_MODEL_PACKAGE = "generated";
 	public final static String DEFAULT_BASE_MODEL_NAME_PREFIX = "Base";
 
 	private final static String DEFAULT_GENERATED_XML_PACKAGE = "generated";
@@ -553,7 +556,7 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 
 	/**
 	 * 根据Model类的全路径名称，生成Base Model类的全路径名(包括类名)。
-	 * 比如根据com.company.model.User，生成com.company.model.base.BaseUser
+	 * 比如根据com.company.model.User，生成com.company.model.generated.BaseUser
 	 * 
 	 * @param oldModelType
 	 * @return 新的名称
