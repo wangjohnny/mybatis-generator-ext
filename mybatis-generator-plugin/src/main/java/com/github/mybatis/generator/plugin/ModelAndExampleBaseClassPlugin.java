@@ -40,6 +40,9 @@ import org.mybatis.generator.internal.DefaultShellCallback;
  * baseModelNamePrefix 为新生成的类文件的前置关键字</br>
  * baseModelPackage 为生成新的类文件的包名</br>
  * extXmlPackage 包名</br>
+ * xmlTargetPackage 为xml文件存放的包名，决定xml文件的路径</br>
+ * xmlNamespacePackage 为xml文件里namespace的包名，与xml文件的路径无关，
+ * 缺省时依次取mapperTargetPackage(Mapper类的包名)、xmlTargetPackage</br>
  * 
  * @author oking
  *
@@ -80,14 +83,30 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 	private String fullModelPackage;
 
 	/**
-	 * 类的主键字段名, 默认为sid
+	 * 类的主键字段名, 默认为id
 	 */
-	private String modelPKColumnName = "sid";
+	private String modelPKColumnName = "id";
 
 	/**
 	 * 扩展xml文件包名
 	 */
 	private String fullExtXmlPackage;
+
+	/**
+	 * xml文件存放的包名，只决定xml文件在磁盘上的路径，与namespace无关
+	 */
+	private String xmlTargetPackage;
+
+	/**
+	 * xml文件里namespace的包名，只决定mapper元素的namespace值，与xml文件的存放路径无关。
+	 * 取值优先级：xmlNamespacePackage > mapperTargetPackage(Mapper类的包名) > xmlTargetPackage
+	 */
+	private String xmlNamespacePackage;
+
+	/**
+	 * 是否显式配置了xmlNamespacePackage，用于判断namespace被覆盖时是否需要告警
+	 */
+	private boolean hasXmlNamespacePackage;
 
 	/**
 	 * 利用java反射获取isMergeable参数，并修改
@@ -133,6 +152,19 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 		int indexOfLastDot = primaryKeyClassName.lastIndexOf('.');
 		String newPrimaryKeyClassName = fullModelPackage + "." + primaryKeyClassName.substring(indexOfLastDot + 1);
 		introspectedTable.setPrimaryKeyType(newPrimaryKeyClassName);
+
+		// 单独设定xml文件的namespace，让它不再受xml文件存放包名(xmlTargetPackage)的影响。
+		// 文件写到哪个目录由MBG依据xmlTargetPackage自行决定，这里只改namespace的取值
+		String xmlNamespace = genXmlNamespace(introspectedTable);
+		introspectedTable.setMyBatis3FallbackSqlMapNamespace(xmlNamespace);
+
+		// getMyBatis3SqlMapNamespace()会优先取javaMapperType，只有它为null时才用上面的fallback。
+		// 配置了javaClientGenerator时javaMapperType不为null，此时xmlNamespacePackage不会生效，需要提示
+		String javaMapperType = introspectedTable.getMyBatis3JavaMapperType();
+		if (javaMapperType != null && hasXmlNamespacePackage && !javaMapperType.equals(xmlNamespace)) {
+			System.out.printf("警告：namespace被Mapper类型[%s]覆盖，xmlNamespacePackage[%s]未生效；" +
+					"如需强制指定namespace，请去掉javaClientGenerator配置%n", javaMapperType, xmlNamespace);
+		}
 	}
 
 	/*
@@ -161,10 +193,23 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 			fullModelPackage = modelTargetPackage + "." + DEFAULT_BASE_MODEL_PACKAGE;
 		}
 
-		String xmlTargetPackage = properties.getProperty("xmlTargetPackage");
+		xmlTargetPackage = properties.getProperty("xmlTargetPackage");
 		if (!stringHasValue(xmlTargetPackage)) {
 			return false;
 		}
+
+		// 文件存放路径与namespace彻底解耦：文件放哪里由 xmlTargetPackage 决定，
+		// namespace 用什么值由 xmlNamespacePackage 决定，两者互不干扰。
+		// 缺省时跟Mapper类所在的包名保持一致，保证namespace与Mapper接口能对应上
+		xmlNamespacePackage = properties.getProperty("xmlNamespacePackage");
+		hasXmlNamespacePackage = stringHasValue(xmlNamespacePackage);
+		if (!hasXmlNamespacePackage) {
+			xmlNamespacePackage = properties.getProperty("mapperTargetPackage");
+		}
+		if (!stringHasValue(xmlNamespacePackage)) {
+			xmlNamespacePackage = xmlTargetPackage;
+		}
+		System.out.printf("xml文件存放包名:%s, xml文件namespace包名:%s%n", xmlTargetPackage, xmlNamespacePackage);
 
 		String extXmlPackage = properties.getProperty("extXmlPackage");
 		if (stringHasValue(extXmlPackage)) {
@@ -245,7 +290,9 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 			document.setRootElement(root);
 
 			// 生成新的空的xml 但是不覆盖
-			root.addAttribute(new Attribute("namespace", introspectedTable.getMyBatis3FallbackSqlMapNamespace()));
+			// 与主xml文件使用同一个取值口径，保证两个xml文件的namespace完全一致，
+			// 否则MyBatis会认为是两个不相干的命名空间，ext里的方法绑不到Mapper接口上
+			root.addAttribute(new Attribute("namespace", introspectedTable.getMyBatis3SqlMapNamespace()));
 			root.addElement(new TextElement("<!--"));
 			StringBuilder sb = new StringBuilder();
 			sb.append("  文件的生成时间： ");
@@ -512,6 +559,21 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 	private String genBaseClassName(String oldModelType) {
 		int indexOfLastDot = oldModelType.lastIndexOf('.');
 		return fullModelPackage + "." + baseModelNamePrefix + oldModelType.substring(indexOfLastDot + 1);
+	}
+
+	/**
+	 * 生成xml文件的namespace。只替换MBG默认namespace的包名部分，保留后面的Mapper短名。
+	 * 比如MBG默认得到com.company.mapper.xml.UserMapper，而xmlNamespacePackage为com.company.mapper，
+	 * 则最终得到com.company.mapper.UserMapper
+	 * 
+	 * @param introspectedTable
+	 * @return 新的namespace
+	 */
+	private String genXmlNamespace(IntrospectedTable introspectedTable) {
+		String defaultNamespace = introspectedTable.getMyBatis3FallbackSqlMapNamespace();
+		int indexOfLastDot = defaultNamespace.lastIndexOf('.');
+		String mapperShortName = defaultNamespace.substring(indexOfLastDot + 1);
+		return xmlNamespacePackage + "." + mapperShortName;
 	}
 
 	public static String capitalize(final String str) {
