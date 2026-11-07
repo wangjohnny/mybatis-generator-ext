@@ -1,21 +1,86 @@
-# 项目介绍
-这是一个针对 [mybatis generator](https://github.com/mybatis/generator) 的扩展项目, 后续会用 MBG 来指代原始的 mybatis generator项目
+# mybatis-generator-ext
 
-# 问题
-描述：使用原始的 MBG 在开发过程中，一旦修改数据库，就需要重新生成 Mapper 文件与 Model 类。
-但是我们在开发过程中，可能已经修改了以前自动生成的代码与xml文件，我经过 N 多项目的实践，总结出一套理论思路：生成的不修改，修改的不生成。随着需求的变化，可以不断使用自动生成，并且程序员在需要扩展的地方，有可以编写自己的扩展。这个方法，在互联网领域很有价值，因为大部分的项目，需求都是不断变化的。
+针对 [MyBatis Generator](https://github.com/mybatis/generator)（下文简称 MBG）的扩展项目，核心思路是「**生成的不修改，修改的不生成**」。
 
-# 思路与解决方法
-简单来说，需要利用 mybatis 的一些特点来解决问题，比如：可以有多个 xml 文件，model 可以继承。利用这个特点，我们通过 MBG 的 plugin 来改造 MGB 生成的文件。最终的产物是三个 java 类（两个 Model 类，1个 Mapper 类），两个 xml 文件
+## 问题与思路
 
-# 生成的xml 文件与 java 代码结构
-## 用 user 表来做示例
+直接使用 MBG 时，一旦修改数据库结构就要重新生成 Mapper 与 Model 类。但生成后的代码往往已被手写过（加字段、加方法、改 SQL），重新生成会把改动覆盖掉。
 
-1. 生成两个 java 类：User 与 BaseUser，User 继承 BaseUser，BaseUser 继承 BaseModel。BaseModel由本工具提供一个基础类，包含几个基础字段。BaseUser 不可以修改，BaseUser 类是原始的 MBG 工具生成的代码，这是通过 plugin 的机制修改的类名，后续本工具再生成代码的时候，会自动覆盖这个文件。User 可以修改，可以添加自己的属性与方法，后续工具再生成不会重新生成这个文件
+本工具利用 MyBatis 的两个特点来化解这个矛盾：
 
-2. xml 文件：两个 xml 文件名相同，只是会放在不同的 package 下，一个是 MBG 自动生成的文件，每次覆盖。一个是留给程序员修改的文件，不再覆盖。
+- **一个表可以有多个 XML 映射文件**
+- **Model 类可以继承**
 
-**注意：暂时没考虑联合主键的的情况**
+通过 MBG 的 plugin 机制改造生成结果，最终每张表产出「可覆盖」与「不可覆盖」两组文件，让生成与手写各归其位：
 
-# 示例代码
+| 类别 | 文件 | 是否覆盖 |
+|---|---|---|
+| Model | `BaseXxx`（含 `BaseXxxExample`） | 覆盖 |
+| Model | `Xxx`（含 `XxxExample`） | 不覆盖 |
+| Mapper | `XxxMapper` 接口 | 不覆盖 |
+| XML | `generated/XxxMapper.xml` | 覆盖 |
+| XML | `XxxMapper.xml`（扩展） | 不覆盖 |
+
+## 用 user 表举例
+
+1. 生成两个 Model 类：`BaseUser` 与 `User`，`User` 继承 `BaseUser`，`BaseUser` 继承 `BaseModel`。
+   - `BaseModel` 由 `mybatis-model` 模块提供，包含几个基础字段。
+   - `BaseUser` 是 MBG 生成、通过 plugin 改名得到的基类，重新生成时会被覆盖。
+   - `User` 是留给程序员手写的子类，可加属性、方法，重新生成时不覆盖。
+2. 两个 XML 文件名相同，放在不同目录：`generated/UserMapper.xml`（生成、覆盖）与 `UserMapper.xml`（扩展、不覆盖）。
+
+**注意：暂未考虑联合主键。**
+
+## 模块结构
+
+| 模块 | 说明 |
+|---|---|
+| `mybatis-pagination` | `Pagination<T>` 分页对象 |
+| `mybatis-model` | `BaseModel<PK>`、`BaseModelExample`、`BaseCriteria`、`Criterion` 基础模型 |
+| `mybatis-mapper` | `GenericMapper<T, TE, PK>` 通用 Mapper 接口 |
+| `mybatis-service` | `GenericService` / `GenericServiceImpl` 通用 Service |
+| `mybatis-generator-plugin` | MBG 插件集合（核心） |
+| `mbg-demo-parent` | 示例工程（未纳入根 pom modules） |
+
+## 插件清单（mybatis-generator-plugin）
+
+| 插件 | 说明 |
+|---|---|
+| `ModelAndExampleBaseClassPlugin` | 核心：改写类型名为 `generated.BaseXxx`，分离 XML 路径与 namespace |
+| `ModelAndExampleSubClassPlugin` | 生成手写扩展子类 |
+| `EntityInheritancePlugin` | 实体 joined 继承（`extendsEntity`） |
+| `MapperPlugin` | 生成 Mapper 接口 |
+| `MysqlPaginationPlugin` | 分页（目前支持 MySQL 与 HSQLDB） |
+| `LombokAnnotationPlugin` | 生成 Lombok 注解 |
+| `JacksonAnnotationPlugin` | 生成 Jackson 注解 |
+| `SwaggerAnnotationPlugin` | 生成 Swagger 注解 |
+| `EqualsHashCodePlugin` | equals/hashCode |
+| `ModelValidationPlugin` | 模型校验 |
+| `BooleanColumnPlugin` | 布尔列处理 |
+| `ColumnDynamicAliasAndPrefixPlugin` | 动态别名/前缀 |
+| `CustomJavaTypeResolver` | 自定义 Java 类型解析 |
+
+> 具体启用哪些插件，在 `generatorConfig.xml` 里自行装配。
+
+## 命名约定
+
+- 用 `generated` 包名/目录名统一标记「工具生成、会被覆盖」的产物，与手写子类分开：
+  - Model 基类：`modelTargetPackage.generated.BaseUser`
+  - 生成 XML：`xmlTargetPackage.generated/UserMapper.xml`
+- 类名前缀 `Base` 不变，包名用 `generated` 标记。
+- 扩展 XML 与 `generated` 目录同级：`mapper/generated/UserMapper.xml`（生成）与 `mapper/UserMapper.xml`（扩展）。
+
+## 快速开始
+
+完整示例见 [mbg-demo-parent](https://github.com/wangjohnny/mbg-demo-parent)（或本仓库 `mbg-demo-parent` 目录），演示了基本生成与 `EntityInheritancePlugin` 的实体继承能力。
+
+## 构建
+
+```bash
+# 必须使用 JDK 21
+JAVA_HOME=$HOME/.sdkman/candidates/java/21.0.10-oracle mvn clean install
+```
+
+## 示例代码
+
 [mybatis generator demo](https://github.com/wangjohnny/mbg-demo-parent)
