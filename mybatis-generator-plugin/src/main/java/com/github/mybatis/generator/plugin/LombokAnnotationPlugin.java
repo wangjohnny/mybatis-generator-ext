@@ -1,5 +1,7 @@
 package com.github.mybatis.generator.plugin;
 
+import static org.mybatis.generator.internal.util.StringUtility.stringHasValue;
+
 import java.util.List;
 
 import org.mybatis.generator.api.IntrospectedColumn;
@@ -83,11 +85,15 @@ public class LombokAnnotationPlugin extends PluginAdapter {
         topLevelClass.addImportedType("lombok.ToString");
 
         List<IntrospectedColumn> primaryKeyColumns = introspectedTable.getPrimaryKeyColumns();
-        if (primaryKeyColumns.size() < 2) {
-            topLevelClass.addAnnotation("@EqualsAndHashCode(onlyExplicitlyIncluded = true)");            
-        } else {
-            // 联合主键，需要添加继承关系
+
+        // 实体配置了 extendsEntity（joined 继承，有业务父类），或为联合主键时，
+        // equals/hashCode 必须调用父类（callSuper=true），否则继承自父类的字段不参与比较
+        boolean hasParentEntity = stringHasValue(
+                introspectedTable.getTableConfigurationProperty("extendsEntity"));
+        if (hasParentEntity || primaryKeyColumns.size() >= 2) {
             topLevelClass.addAnnotation("@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)");
+        } else {
+            topLevelClass.addAnnotation("@EqualsAndHashCode(onlyExplicitlyIncluded = true)");
         }
         topLevelClass.addImportedType("lombok.EqualsAndHashCode");
 
