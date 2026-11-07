@@ -47,3 +47,33 @@ CREATE TABLE `role_permission` (
   `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`role_sid`, `permission_sid`)
 );
+
+-- ============ EntityInheritancePlugin 继承 demo ============
+-- 三级 joined 继承：sales_order（顶层父表）← import_order ← export_order
+-- 子表主键即父表主键。生成的实体继承关系：
+--   BaseSalesOrder ← BaseImportOrder ← BaseExportOrder
+
+DROP TABLE IF EXISTS `sales_order`;
+CREATE TABLE `sales_order` (
+  `id` BIGINT PRIMARY KEY COMMENT '主键',
+  `order_no` VARCHAR(50) NOT NULL COMMENT '订单号',
+  `status` TINYINT DEFAULT 1 COMMENT '状态',
+  `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+);
+
+DROP TABLE IF EXISTS `import_order`;
+CREATE TABLE `import_order` (
+  `id` BIGINT PRIMARY KEY COMMENT '主键，即父表主键',
+  `import_type` VARCHAR(50) COMMENT '进口类型',
+  `customs_no` VARCHAR(50) COMMENT '报关单号',
+  `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+);
+
+DROP TABLE IF EXISTS `export_order`;
+CREATE TABLE `export_order` (
+  `id` BIGINT PRIMARY KEY COMMENT '主键，即父表主键',
+  `export_type` VARCHAR(50) COMMENT '出口类型',
+  `destination` VARCHAR(100) COMMENT '目的港',
+  `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+);
+
