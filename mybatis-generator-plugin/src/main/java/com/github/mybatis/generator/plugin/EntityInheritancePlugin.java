@@ -32,6 +32,12 @@ import org.mybatis.generator.api.dom.java.TopLevelClass;
  * &lt;/table&gt;
  * </pre>
  * <p>
+ * 可选的插件级配置 {@code filterDuplicateFields}（默认 true）：
+ * <ul>
+ * <li>true：过滤父类已有的全部字段（主键 + 普通业务列），标准 joined 继承语义。</li>
+ * <li>false：只过滤主键字段，父类里重名的普通业务列仍在子类生成（子类重新定义）。</li>
+ * </ul>
+ * <p>
  * 约定：
  * <ul>
  * <li>joined 继承中子表主键即父表主键（外键），父类实体里的全部字段（主键 + 业务列）
@@ -48,6 +54,23 @@ public class EntityInheritancePlugin extends PluginAdapter {
 
     /** 在 {@code <table>} 上声明父类实体名的 property key */
     private static final String PROP_EXTENDS_ENTITY = "extendsEntity";
+
+    /**
+     * 是否过滤除主键外的普通重复字段。
+     * <p>
+     * true（默认）：子类不重复生成父类里已有的任何字段（主键 + 普通业务列），全部继承，
+     * 是标准 joined 继承语义。
+     * <p>
+     * false：只过滤主键字段（joined 继承主键必须继承自父类），父类里重名的普通业务列
+     * 仍会在子类里生成，即子类重新定义这些字段（覆盖父类同名字段）。
+     */
+    private boolean filterDuplicateFields = true;
+
+    /**
+     * 「表 → 该表主键列的 actualColumnName 集合」。
+     * 用于 filterDuplicateFields=false 时仍要按主键过滤。
+     */
+    private final Map<IntrospectedTable, Set<String>> primaryKeyColumnsByTable = new HashMap<>();
 
     /**
      * 跨表共享的「实体简单名 → 该实体的全部字段列名」缓存。
@@ -69,12 +92,22 @@ public class EntityInheritancePlugin extends PluginAdapter {
 
     @Override
     public boolean validate(List<String> warnings) {
-        // 本插件无必填配置，恒有效
+        String value = properties.getProperty("filterDuplicateFields");
+        if (stringHasValue(value)) {
+            filterDuplicateFields = Boolean.parseBoolean(value.trim());
+        }
         return true;
     }
 
     @Override
     public void initialized(IntrospectedTable introspectedTable) {
+        // 记录当前表生成实体的主键列名（filterDuplicateFields=false 时仍要按主键过滤）
+        Set<String> pkColumns = new HashSet<>();
+        for (IntrospectedColumn pkColumn : introspectedTable.getPrimaryKeyColumns()) {
+            pkColumns.add(pkColumn.getActualColumnName());
+        }
+        primaryKeyColumnsByTable.put(introspectedTable, pkColumns);
+
         // 记录当前表生成的实体简单名。baseRecordType 此时已被
         // ModelAndExampleBaseClassPlugin 改写为 xxx.generated.BaseXxx，取短名作为注册 key
         String baseRecordType = introspectedTable.getBaseRecordType();
@@ -93,9 +126,9 @@ public class EntityInheritancePlugin extends PluginAdapter {
         String extendsEntity = introspectedTable.getTableConfigurationProperty(PROP_EXTENDS_ENTITY);
         if (stringHasValue(extendsEntity)) {
             parentEntityByTable.put(introspectedTable, extendsEntity.trim());
-            System.out.printf("表 %s 配置了实体继承：extends %s%n",
+            System.out.printf("表 %s 配置了实体继承：extends %s，filterDuplicateFields=%s%n",
                     introspectedTable.getFullyQualifiedTable().getIntrospectedTableName(),
-                    extendsEntity.trim());
+                    extendsEntity.trim(), filterDuplicateFields);
         }
     }
 
@@ -119,10 +152,20 @@ public class EntityInheritancePlugin extends PluginAdapter {
     }
 
     /**
-     * 判断给定列是否需要在子类里被过滤：是父类已有的字段（按列名比对）。
-     * 主键字段必然包含在父类字段集合中（joined 继承主键即父表主键）。
+     * 判断给定列是否需要在子类里被过滤。
+     * <p>
+     * filterDuplicateFields=true：父类已有的任何字段（按列名比对）都过滤。
+     * filterDuplicateFields=false：只过滤主键字段，普通重复字段保留在子类。
      */
     private boolean isInheritedField(IntrospectedTable introspectedTable, String actualColumnName) {
+        if (parentEntityOf(introspectedTable) == null) {
+            return false;
+        }
+        if (!filterDuplicateFields) {
+            // 只按主键过滤：当前字段是主键列时过滤（joined 继承主键继承自父类）
+            Set<String> pkColumns = primaryKeyColumnsByTable.get(introspectedTable);
+            return pkColumns != null && pkColumns.contains(actualColumnName);
+        }
         Set<String> parentColumns = parentFieldColumnsOf(introspectedTable);
         if (parentColumns == null) {
             return false;
@@ -159,7 +202,7 @@ public class EntityInheritancePlugin extends PluginAdapter {
         if (modelClassType != ModelClassType.BASE_RECORD) {
             return true;
         }
-        // joined 继承：父类已有的字段（主键 + 业务列）全部继承自父类，不重复生成，避免字段遮蔽
+        // joined 继承：父类已有字段（主键，或 filterDuplicateFields=true 时的业务列）不重复生成
         if (isInheritedField(introspectedTable, introspectedColumn.getActualColumnName())) {
             System.out.printf("跳过字段 %s（继承自父类 %s）%n",
                     field.getName(), parentEntityOf(introspectedTable));
