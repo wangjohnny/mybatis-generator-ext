@@ -21,10 +21,10 @@ import org.mybatis.generator.api.dom.xml.XmlElement;
  * <li>{@code deleted_at} = 删除时间（方法参数传入，为 null 时用数据库 {@code CURRENT_TIMESTAMP}）</li>
  * </ul>
  * <p>
- * 对应 {@link com.github.mybatis.mapper.GenericMapper} 上新增的两个方法签名：
+ * 对应 {@link com.github.mybatis.mapper.GenericMapper} 上新增的两个方法签名（更新值在前、条件在后）：
  * <ul>
- * <li>{@code int softDeleteByPrimaryKey(PK id, Long deletedBy, LocalDateTime deletedAt)} —— 按主键软删</li>
- * <li>{@code int softDeleteByExample(TE example, Long deletedBy, LocalDateTime deletedAt)} —— 按条件批量软删</li>
+ * <li>{@code int softDeleteByPrimaryKey(Long deletedBy, LocalDateTime deletedAt, PK id)} —— 按主键软删</li>
+ * <li>{@code int softDeleteByExample(Long deletedBy, LocalDateTime deletedAt, TE example)} —— 按条件批量软删</li>
  * </ul>
  * <p>
  * 判断逻辑：仅当表含软删除标记列时，才往生成的 XML（{@code generated/XxxMapper.xml}）里追加
@@ -177,7 +177,7 @@ public class SoftDeletePlugin extends PluginAdapter {
                         + ", " + DELETED_BY_COLUMN + " = #{deletedBy,jdbcType=BIGINT},"));
 
         // deleted_at 动态列
-        update.addElement(buildDeletedAtChooseElement());
+        update.addElement(buildDeletedAtChooseElement("deletedAt"));
 
         // where 主键 = #{id}
         StringBuilder sb = new StringBuilder("where ");
@@ -213,7 +213,7 @@ public class SoftDeletePlugin extends PluginAdapter {
                         + ", " + DELETED_BY_COLUMN + " = #{deletedBy,jdbcType=BIGINT},"));
 
         // deleted_at 动态列
-        update.addElement(buildDeletedAtChooseElement());
+        update.addElement(buildDeletedAtChooseElement("deletedAt"));
 
         // where 条件复用
         XmlElement ifElement = new XmlElement("if");
@@ -228,8 +228,9 @@ public class SoftDeletePlugin extends PluginAdapter {
 
     /**
      * 生成 {@code deleted_at} 的动态赋值元素：
-     * deletedAt 参数非 null 时用参数值，否则用数据库当前时间。
+     * 属性路径非 null 时用参数值，否则用数据库当前时间。
      *
+     * @param deletedAtPath {@code deleted_at} 取值所对应的 OGNL 属性路径（此处为 {@code deletedAt}）
      * <pre>
      * &lt;choose&gt;
      *   &lt;when test="deletedAt != null"&gt;deleted_at = #{deletedAt,jdbcType=TIMESTAMP}&lt;/when&gt;
@@ -237,13 +238,13 @@ public class SoftDeletePlugin extends PluginAdapter {
      * &lt;/choose&gt;
      * </pre>
      */
-    private XmlElement buildDeletedAtChooseElement() {
+    private XmlElement buildDeletedAtChooseElement(String deletedAtPath) {
         XmlElement choose = new XmlElement("choose");
 
         XmlElement when = new XmlElement("when");
-        when.addAttribute(new Attribute("test", "deletedAt != null"));
+        when.addAttribute(new Attribute("test", deletedAtPath + " != null"));
         when.addElement(new TextElement(
-                DELETED_AT_COLUMN + " = #{deletedAt,jdbcType=TIMESTAMP}"));
+                DELETED_AT_COLUMN + " = #{" + deletedAtPath + ",jdbcType=TIMESTAMP}"));
         choose.addElement(when);
 
         XmlElement otherwise = new XmlElement("otherwise");
