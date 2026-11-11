@@ -13,17 +13,17 @@ import org.mybatis.generator.api.dom.xml.TextElement;
 import org.mybatis.generator.api.dom.xml.XmlElement;
 
 /**
- * 软删除插件：为「含有软删除标记列」的表生成 {@code softDelete} / {@code softDeleteByExample}
+ * 软删除插件：为「含有软删除标记列」的表生成 {@code softDeleteByPrimaryKey} / {@code softDeleteByExample}
  * 两个 update SQL（将标记列置为 1）。
  * <p>
  * 对应 {@link com.github.mybatis.mapper.GenericMapper} 上新增的两个方法签名：
  * <ul>
- * <li>{@code int softDelete(PK id)} —— 按主键软删</li>
+ * <li>{@code int softDeleteByPrimaryKey(PK id)} —— 按主键软删</li>
  * <li>{@code int softDeleteByExample(TE example)} —— 按条件批量软删</li>
  * </ul>
  * <p>
  * 判断逻辑：仅当表含软删除标记列时，才往生成的 XML（{@code generated/XxxMapper.xml}）里追加
- * 这两个 statement；否则不生成。未生成 SQL 的表调用 {@code softDelete} 时，MyBatis 会抛出
+ * 这两个 statement；否则不生成。未生成 SQL 的表调用 {@code softDeleteByPrimaryKey} 时，MyBatis 会抛出
  * {@code Invalid bound statement} 异常，即「该表没有此字段」的运行时错误。
  * <p>
  * 软删除标记列名可配置（{@code softDeleteColumn}），默认兼容两种常见命名：
@@ -115,7 +115,7 @@ public class SoftDeletePlugin extends PluginAdapter {
 
     @Override
     public boolean sqlMapDocumentGenerated(Document document, IntrospectedTable introspectedTable) {
-        // 无软删除标记列的表不生成 softDelete SQL，调用时抛 Invalid bound statement
+        // 无软删除标记列的表不生成 softDelete 相关 SQL，调用时抛 Invalid bound statement
         if (!hasSoftDeleteColumn(introspectedTable)) {
             return true;
         }
@@ -133,7 +133,7 @@ public class SoftDeletePlugin extends PluginAdapter {
         // 按条件软删
         root.addElement(buildSoftDeleteByExampleElement(introspectedTable, softDeleteColumn));
 
-        System.out.printf("表 %s 含软删除列 %s，已生成 softDelete / softDeleteByExample 语句%n",
+        System.out.printf("表 %s 含软删除列 %s，已生成 softDeleteByPrimaryKey / softDeleteByExample 语句%n",
                 introspectedTable.getFullyQualifiedTable().getIntrospectedTableName(),
                 softDeleteColumn);
 
@@ -141,12 +141,12 @@ public class SoftDeletePlugin extends PluginAdapter {
     }
 
     /**
-     * 生成 {@code softDelete} 的 update 元素：update 表名 set 软删除列 = 1 where 主键 = #{id}。
+     * 生成 {@code softDeleteByPrimaryKey} 的 update 元素：update 表名 set 软删除列 = 1 where 主键 = #{id}。
      */
     private XmlElement buildSoftDeleteByPrimaryKeyElement(IntrospectedTable introspectedTable,
             String softDeleteColumn) {
         XmlElement update = new XmlElement("update");
-        update.addAttribute(new Attribute("id", "softDelete"));
+        update.addAttribute(new Attribute("id", "softDeleteByPrimaryKey"));
 
         List<IntrospectedColumn> pkColumns = introspectedTable.getPrimaryKeyColumns();
         if (!pkColumns.isEmpty()) {
