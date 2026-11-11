@@ -124,6 +124,11 @@ public class LombokAnnotationPlugin extends PluginAdapter {
         topLevelClass.addAnnotation("@ToString");
         topLevelClass.addImportedType("lombok.ToString");
 
+        // 联合主键 Key 类的每个字段都是主键，modelFieldGenerated 会给它们加 @EqualsAndHashCode.Include，
+        // 因此这里必须补上 @EqualsAndHashCode 类级注解（及 import），否则编译报「程序包 EqualsAndHashCode 不存在」
+        topLevelClass.addAnnotation("@EqualsAndHashCode(onlyExplicitlyIncluded = true)");
+        topLevelClass.addImportedType("lombok.EqualsAndHashCode");
+
         topLevelClass.addAnnotation("@NoArgsConstructor");
         topLevelClass.addImportedType("lombok.NoArgsConstructor");
 
