@@ -14,17 +14,25 @@ import org.mybatis.generator.api.dom.xml.XmlElement;
 
 /**
  * 软删除插件：为「含有软删除标记列」的表生成 {@code softDeleteByPrimaryKey} / {@code softDeleteByExample}
- * 两个 update SQL（将标记列置为 1）。
+ * 两个 update SQL。软删除时同时更新三列：
+ * <ul>
+ * <li>{@code is_deleted} 置 1（软删除标记）</li>
+ * <li>{@code deleted_by} = 删除人 id（方法参数传入）</li>
+ * <li>{@code deleted_at} = 删除时间（方法参数传入，为 null 时用数据库 {@code CURRENT_TIMESTAMP}）</li>
+ * </ul>
  * <p>
  * 对应 {@link com.github.mybatis.mapper.GenericMapper} 上新增的两个方法签名：
  * <ul>
- * <li>{@code int softDeleteByPrimaryKey(PK id)} —— 按主键软删</li>
- * <li>{@code int softDeleteByExample(TE example)} —— 按条件批量软删</li>
+ * <li>{@code int softDeleteByPrimaryKey(PK id, Long deletedBy, LocalDateTime deletedAt)} —— 按主键软删</li>
+ * <li>{@code int softDeleteByExample(TE example, Long deletedBy, LocalDateTime deletedAt)} —— 按条件批量软删</li>
  * </ul>
  * <p>
  * 判断逻辑：仅当表含软删除标记列时，才往生成的 XML（{@code generated/XxxMapper.xml}）里追加
  * 这两个 statement；否则不生成。未生成 SQL 的表调用 {@code softDeleteByPrimaryKey} 时，MyBatis 会抛出
  * {@code Invalid bound statement} 异常，即「该表没有此字段」的运行时错误。
+ * <p>
+ * 约定：含软删除标记列的表必定同时含 {@code deleted_by} 与 {@code deleted_at} 列，
+ * 因此插件固定更新这三列，不做逐列存在性判断。
  * <p>
  * 软删除标记列名可配置（{@code softDeleteColumn}），默认兼容两种常见命名：
  * {@code is_deleted} 与 {@code is_delete}，任一张表命中其一即可。
@@ -48,6 +56,12 @@ public class SoftDeletePlugin extends PluginAdapter {
 
     /** 软删除标记置位的目标值 */
     private static final String DELETED_VALUE = "1";
+
+    /** 软删除审计列：删除人 */
+    private static final String DELETED_BY_COLUMN = "deleted_by";
+
+    /** 软删除审计列：删除时间 */
+    private static final String DELETED_AT_COLUMN = "deleted_at";
 
     /** 软删除标记列名候选（去空格后的小写形式用于比对） */
     private String[] softDeleteColumnCandidates;
@@ -141,7 +155,8 @@ public class SoftDeletePlugin extends PluginAdapter {
     }
 
     /**
-     * 生成 {@code softDeleteByPrimaryKey} 的 update 元素：update 表名 set 软删除列 = 1 where 主键 = #{id}。
+     * 生成 {@code softDeleteByPrimaryKey} 的 update 元素：
+     * update 表名 set is_deleted = 1, deleted_by = #{deletedBy}, deleted_at = &lt;动态&gt; where 主键 = #{id}。
      */
     private XmlElement buildSoftDeleteByPrimaryKeyElement(IntrospectedTable introspectedTable,
             String softDeleteColumn) {
@@ -155,10 +170,17 @@ public class SoftDeletePlugin extends PluginAdapter {
         }
 
         String tableName = introspectedTable.getFullyQualifiedTableNameAtRuntime();
-        StringBuilder sb = new StringBuilder();
-        sb.append("update ").append(tableName).append(" set ").append(softDeleteColumn)
-                .append(" = ").append(DELETED_VALUE).append(" where ");
 
+        // update 表名 set is_deleted = 1, deleted_by = #{deletedBy},
+        update.addElement(new TextElement(
+                "update " + tableName + " set " + softDeleteColumn + " = " + DELETED_VALUE
+                        + ", " + DELETED_BY_COLUMN + " = #{deletedBy,jdbcType=BIGINT},"));
+
+        // deleted_at 动态列
+        update.addElement(buildDeletedAtChooseElement());
+
+        // where 主键 = #{id}
+        StringBuilder sb = new StringBuilder("where ");
         if (pkColumns.isEmpty()) {
             // 理论上不会有主键为空的表，这里兜底防止生成不完整 SQL
             sb.append("1 = 0");
@@ -167,14 +189,15 @@ public class SoftDeletePlugin extends PluginAdapter {
             sb.append(pkColumn.getActualColumnName()).append(" = #{id,jdbcType=")
                     .append(pkColumn.getJdbcTypeName()).append("}");
         }
-
         update.addElement(new TextElement(sb.toString()));
+
         return update;
     }
 
     /**
      * 生成 {@code softDeleteByExample} 的 update 元素：
-     * update 表名 set 软删除列 = 1，where 条件复用 Example_Where_Clause。
+     * update 表名 set is_deleted = 1, deleted_by = #{deletedBy}, deleted_at = &lt;动态&gt;，
+     * where 条件复用 Update_By_Example_Where_Clause。
      */
     private XmlElement buildSoftDeleteByExampleElement(IntrospectedTable introspectedTable,
             String softDeleteColumn) {
@@ -183,9 +206,16 @@ public class SoftDeletePlugin extends PluginAdapter {
         update.addAttribute(new Attribute("parameterType", "map"));
 
         String tableName = introspectedTable.getFullyQualifiedTableNameAtRuntime();
-        update.addElement(new TextElement(
-                "update " + tableName + " set " + softDeleteColumn + " = " + DELETED_VALUE));
 
+        // update 表名 set is_deleted = 1, deleted_by = #{deletedBy},
+        update.addElement(new TextElement(
+                "update " + tableName + " set " + softDeleteColumn + " = " + DELETED_VALUE
+                        + ", " + DELETED_BY_COLUMN + " = #{deletedBy,jdbcType=BIGINT},"));
+
+        // deleted_at 动态列
+        update.addElement(buildDeletedAtChooseElement());
+
+        // where 条件复用
         XmlElement ifElement = new XmlElement("if");
         ifElement.addAttribute(new Attribute("test", "example != null"));
         XmlElement include = new XmlElement("include");
@@ -194,6 +224,34 @@ public class SoftDeletePlugin extends PluginAdapter {
         update.addElement(ifElement);
 
         return update;
+    }
+
+    /**
+     * 生成 {@code deleted_at} 的动态赋值元素：
+     * deletedAt 参数非 null 时用参数值，否则用数据库当前时间。
+     *
+     * <pre>
+     * &lt;choose&gt;
+     *   &lt;when test="deletedAt != null"&gt;deleted_at = #{deletedAt,jdbcType=TIMESTAMP}&lt;/when&gt;
+     *   &lt;otherwise&gt;deleted_at = CURRENT_TIMESTAMP&lt;/otherwise&gt;
+     * &lt;/choose&gt;
+     * </pre>
+     */
+    private XmlElement buildDeletedAtChooseElement() {
+        XmlElement choose = new XmlElement("choose");
+
+        XmlElement when = new XmlElement("when");
+        when.addAttribute(new Attribute("test", "deletedAt != null"));
+        when.addElement(new TextElement(
+                DELETED_AT_COLUMN + " = #{deletedAt,jdbcType=TIMESTAMP}"));
+        choose.addElement(when);
+
+        XmlElement otherwise = new XmlElement("otherwise");
+        otherwise.addElement(new TextElement(
+                DELETED_AT_COLUMN + " = CURRENT_TIMESTAMP"));
+        choose.addElement(otherwise);
+
+        return choose;
     }
 
 }

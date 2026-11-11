@@ -40,18 +40,33 @@ public interface GenericMapper<T extends Serializable, TE extends BaseModelExamp
     int updateByPrimaryKey(T record);
 
     /**
-     * 按主键软删除：将 {@code is_deleted} 置为 1。
+     * 按主键软删除：将 {@code is_deleted} 置为 1，同时更新 {@code deleted_by} 与 {@code deleted_at}。
      * <p>
      * 仅当表存在软删除标记列（默认 {@code is_deleted}，可配置）时，生成的 XML 中才会提供对应 SQL；
      * 否则调用此方法会抛出 MyBatis 的 {@code Invalid bound statement} 异常。
+     * <p>
+     * {@code deletedAt} 传入 null 时使用数据库当前时间（{@code CURRENT_TIMESTAMP}）。
+     *
+     * @param id 主键
+     * @param deletedBy 删除人 id
+     * @param deletedAt 删除时间，可为 null（此时用数据库当前时间）
      */
-    int softDeleteByPrimaryKey(PK id);
+    int softDeleteByPrimaryKey(@Param("id") PK id,
+                               @Param("deletedBy") Long deletedBy,
+                               @Param("deletedAt") java.time.LocalDateTime deletedAt);
 
     /**
-     * 按条件软删除：将 {@code is_deleted} 置为 1。
+     * 按条件软删除：将 {@code is_deleted} 置为 1，同时更新 {@code deleted_by} 与 {@code deleted_at}。
      * <p>
-     * 与 {@link #softDeleteByPrimaryKey(Object)} 相同，仅当表存在软删除标记列时才生成对应 SQL。
+     * 与 {@link #softDeleteByPrimaryKey(Object, Long, java.time.LocalDateTime)} 相同，
+     * 仅当表存在软删除标记列时才生成对应 SQL；{@code deletedAt} 为 null 时用数据库当前时间。
+     *
+     * @param example 删除条件
+     * @param deletedBy 删除人 id
+     * @param deletedAt 删除时间，可为 null（此时用数据库当前时间）
      */
-    int softDeleteByExample(TE example);
+    int softDeleteByExample(@Param("example") TE example,
+                            @Param("deletedBy") Long deletedBy,
+                            @Param("deletedAt") java.time.LocalDateTime deletedAt);
 
 }
