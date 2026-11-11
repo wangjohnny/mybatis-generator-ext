@@ -7,8 +7,10 @@ CREATE TABLE `user` (
   `email` VARCHAR(100) COMMENT '邮箱',
   `status` TINYINT DEFAULT 1 COMMENT '状态（0-禁用，1-启用）',
   `is_deleted` TINYINT DEFAULT 0 COMMENT '软删除标记（0-正常，1-已删除）',
-  `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `updated_datetime` TIMESTAMP DEFAULT null COMMENT '更新时间'
+  `deleted_by` BIGINT DEFAULT NULL COMMENT '删除人ID',
+  `deleted_at` TIMESTAMP DEFAULT NULL COMMENT '删除时间',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` TIMESTAMP DEFAULT null COMMENT '更新时间'
 );
 
 DROP TABLE IF EXISTS `role`;
@@ -18,8 +20,10 @@ CREATE TABLE `role` (
   `role_code` VARCHAR(50) NOT NULL UNIQUE COMMENT '角色编号',
   `description` VARCHAR(255) COMMENT '角色描述',
   `is_deleted` TINYINT DEFAULT 0 COMMENT '软删除标记（0-正常，1-已删除）',
-  `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `updated_datetime` TIMESTAMP DEFAULT null COMMENT '更新时间'
+  `deleted_by` BIGINT DEFAULT NULL COMMENT '删除人ID',
+  `deleted_at` TIMESTAMP DEFAULT NULL COMMENT '删除时间',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` TIMESTAMP DEFAULT null COMMENT '更新时间'
 );
 
 DROP TABLE IF EXISTS `permission`;
@@ -31,15 +35,17 @@ CREATE TABLE `permission` (
   `path` VARCHAR(255) COMMENT '访问路径',
   `parent_sid` BIGINT DEFAULT NULL COMMENT '父权限ID',
   `is_deleted` TINYINT DEFAULT 0 COMMENT '软删除标记（0-正常，1-已删除）',
-  `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `updated_datetime` TIMESTAMP DEFAULT null COMMENT '更新时间'
+  `deleted_by` BIGINT DEFAULT NULL COMMENT '删除人ID',
+  `deleted_at` TIMESTAMP DEFAULT NULL COMMENT '删除时间',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` TIMESTAMP DEFAULT null COMMENT '更新时间'
 );
 
 DROP TABLE IF EXISTS `user_role`;
 CREATE TABLE `user_role` (
   `user_sid` BIGINT NOT NULL COMMENT '用户ID',
   `role_sid` BIGINT NOT NULL COMMENT '角色ID',
-  `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`user_sid`, `role_sid`)
 );
 
@@ -47,7 +53,7 @@ DROP TABLE IF EXISTS `role_permission`;
 CREATE TABLE `role_permission` (
   `role_sid` BIGINT NOT NULL COMMENT '角色ID',
   `permission_sid` BIGINT NOT NULL COMMENT '权限ID',
-  `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`role_sid`, `permission_sid`)
 );
 
@@ -62,7 +68,9 @@ CREATE TABLE `sales_order` (
   `order_no` VARCHAR(50) NOT NULL COMMENT '订单号',
   `status` TINYINT DEFAULT 1 COMMENT '状态',
   `is_deleted` TINYINT DEFAULT 0 COMMENT '软删除标记（0-正常，1-已删除）',
-  `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+  `deleted_by` BIGINT DEFAULT NULL COMMENT '删除人ID',
+  `deleted_at` TIMESTAMP DEFAULT NULL COMMENT '删除时间',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
 );
 
 DROP TABLE IF EXISTS `import_order`;
@@ -71,7 +79,9 @@ CREATE TABLE `import_order` (
   `import_type` VARCHAR(50) COMMENT '进口类型',
   `customs_no` VARCHAR(50) COMMENT '报关单号',
   `is_deleted` TINYINT DEFAULT 0 COMMENT '软删除标记（0-正常，1-已删除）',
-  `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+  `deleted_by` BIGINT DEFAULT NULL COMMENT '删除人ID',
+  `deleted_at` TIMESTAMP DEFAULT NULL COMMENT '删除时间',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
 );
 
 DROP TABLE IF EXISTS `export_order`;
@@ -80,6 +90,8 @@ CREATE TABLE `export_order` (
   `export_type` VARCHAR(50) COMMENT '出口类型',
   `destination` VARCHAR(100) COMMENT '目的港',
   `is_deleted` TINYINT DEFAULT 0 COMMENT '软删除标记（0-正常，1-已删除）',
-  `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+  `deleted_by` BIGINT DEFAULT NULL COMMENT '删除人ID',
+  `deleted_at` TIMESTAMP DEFAULT NULL COMMENT '删除时间',
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
 );
 
