@@ -26,6 +26,8 @@
         </plugin>
         <plugin type="com.github.mybatis.generator.plugin.EntityInheritancePlugin">
         </plugin>
+        <plugin type="com.github.mybatis.generator.plugin.SoftDeletePlugin">
+        </plugin>
         <plugin type="com.github.mybatis.generator.plugin.MapperPlugin">
             <property name="mapperTargetDir" value="${mapperTargetDir}"/>
             <property name="mapperTargetPackage" value="${mapperTargetPackage}"/>
@@ -79,6 +81,9 @@
 
         <table tableName="user"></table>
         <table tableName="role"></table>
+        <table tableName="permission"></table>
+        <table tableName="user_role"></table>
+        <table tableName="role_permission"></table>
 
         <!-- EntityInheritancePlugin 继承 demo：sales_order 为顶层父表，
              import_order 继承 sales_order，export_order 继承 import_order（三级继承链） -->

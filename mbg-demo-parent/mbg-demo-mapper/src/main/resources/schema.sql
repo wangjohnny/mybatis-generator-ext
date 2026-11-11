@@ -6,6 +6,7 @@ CREATE TABLE `user` (
   `password` VARCHAR(60) NOT NULL COMMENT '密码',
   `email` VARCHAR(100) COMMENT '邮箱',
   `status` TINYINT DEFAULT 1 COMMENT '状态（0-禁用，1-启用）',
+  `is_deleted` TINYINT DEFAULT 0 COMMENT '软删除标记（0-正常，1-已删除）',
   `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_datetime` TIMESTAMP DEFAULT null COMMENT '更新时间'
 );
@@ -16,6 +17,7 @@ CREATE TABLE `role` (
   `role_name` VARCHAR(50) NOT NULL UNIQUE COMMENT '角色名称',
   `role_code` VARCHAR(50) NOT NULL UNIQUE COMMENT '角色编号',
   `description` VARCHAR(255) COMMENT '角色描述',
+  `is_deleted` TINYINT DEFAULT 0 COMMENT '软删除标记（0-正常，1-已删除）',
   `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_datetime` TIMESTAMP DEFAULT null COMMENT '更新时间'
 );
@@ -28,6 +30,7 @@ CREATE TABLE `permission` (
   `perm_type` TINYINT NOT NULL COMMENT '类型（1-菜单，2-按钮，3-API）',
   `path` VARCHAR(255) COMMENT '访问路径',
   `parent_sid` BIGINT DEFAULT NULL COMMENT '父权限ID',
+  `is_deleted` TINYINT DEFAULT 0 COMMENT '软删除标记（0-正常，1-已删除）',
   `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updated_datetime` TIMESTAMP DEFAULT null COMMENT '更新时间'
 );
@@ -58,6 +61,7 @@ CREATE TABLE `sales_order` (
   `id` BIGINT PRIMARY KEY COMMENT '主键',
   `order_no` VARCHAR(50) NOT NULL COMMENT '订单号',
   `status` TINYINT DEFAULT 1 COMMENT '状态',
+  `is_deleted` TINYINT DEFAULT 0 COMMENT '软删除标记（0-正常，1-已删除）',
   `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
 );
 
@@ -66,6 +70,7 @@ CREATE TABLE `import_order` (
   `id` BIGINT PRIMARY KEY COMMENT '主键，即父表主键',
   `import_type` VARCHAR(50) COMMENT '进口类型',
   `customs_no` VARCHAR(50) COMMENT '报关单号',
+  `is_deleted` TINYINT DEFAULT 0 COMMENT '软删除标记（0-正常，1-已删除）',
   `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
 );
 
@@ -74,6 +79,7 @@ CREATE TABLE `export_order` (
   `id` BIGINT PRIMARY KEY COMMENT '主键，即父表主键',
   `export_type` VARCHAR(50) COMMENT '出口类型',
   `destination` VARCHAR(100) COMMENT '目的港',
+  `is_deleted` TINYINT DEFAULT 0 COMMENT '软删除标记（0-正常，1-已删除）',
   `created_datetime` TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
 );
 
