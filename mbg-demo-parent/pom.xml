@@ -19,7 +19,7 @@
 
     <properties>
         <!-- 依赖的 mybatis-generator-ext 版本，升级时只需修改这里 -->
-        <mbg-ext.version>1.5.2-SNAPSHOT</mbg-ext.version>
+        <mbg-ext.version>1.5.3-SNAPSHOT</mbg-ext.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <skipTests>true</skipTests>

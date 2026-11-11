@@ -39,4 +39,19 @@ public interface GenericMapper<T extends Serializable, TE extends BaseModelExamp
 
     int updateByPrimaryKey(T record);
 
+    /**
+     * 按主键软删除：将 {@code is_deleted} 置为 1。
+     * <p>
+     * 仅当表存在软删除标记列（默认 {@code is_deleted}，可配置）时，生成的 XML 中才会提供对应 SQL；
+     * 否则调用此方法会抛出 MyBatis 的 {@code Invalid bound statement} 异常。
+     */
+    int softDelete(PK id);
+
+    /**
+     * 按条件软删除：将 {@code is_deleted} 置为 1。
+     * <p>
+     * 与 {@link #softDelete(Object)} 相同，仅当表存在软删除标记列时才生成对应 SQL。
+     */
+    int softDeleteByExample(TE example);
+
 }

@@ -133,7 +133,6 @@ public class MapperPlugin extends PluginAdapter {
                 String primaryKeyType = introspectedTable.getPrimaryKeyType();
                 pkType = new FullyQualifiedJavaType(primaryKeyType);
             }
-//            pkType = primaryKeyColumns.get(0).getFullyQualifiedJavaType();//TODO:默认不考虑联合主键的情况
             System.out.println("primaryKey Type:" + pkType);
         }
 
