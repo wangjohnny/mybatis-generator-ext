@@ -138,24 +138,8 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 	 */
 	private String xmlNamespacePackage;
 
-	/**
-	 * 利用java反射获取isMergeable参数，并修改
-	 */
-	private java.lang.reflect.Field isMergeableFid = null;
-
 	public ModelAndExampleBaseClassPlugin() {
 		shellCallback = new DefaultShellCallback(false);
-
-		try {
-			if (isMergeableFid == null) {
-				isMergeableFid = GeneratedXmlFile.class.getDeclaredField("isMergeable");
-				isMergeableFid.setAccessible(true);
-			}
-		} catch (NoSuchFieldException e) {
-			e.printStackTrace();
-		} catch (SecurityException e) {
-			e.printStackTrace();
-		}
 	}
 
 	@Override
@@ -309,15 +293,8 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 		List<GeneratedXmlFile> xmlFiles = introspectedTable.getGeneratedXmlFiles();
 
 		for (GeneratedXmlFile xmlFile : xmlFiles) {
-			try {
-//				 将xml的isMergeabl改为false
-				isMergeableFid.set(xmlFile, false);
-//				xmlFile.setMergeable(false);
-			} catch (IllegalArgumentException e) {
-				e.printStackTrace();
-			} catch (IllegalAccessException e) {
-				e.printStackTrace();
-			}
+			// 将主xml的isMergeable改为false，强制每次生成都覆盖，否则残留旧内容
+			xmlFile.setMergeable(false);
 
 			Document document = new Document(XmlConstants.MYBATIS3_MAPPER_PUBLIC_ID,
 					XmlConstants.MYBATIS3_MAPPER_SYSTEM_ID);
