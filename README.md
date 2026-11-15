@@ -67,12 +67,26 @@
   - 生成 XML：`xmlTargetPackage.generated/UserMapper.xml`
 - 类名前缀 `Base` 不变，包名用 `generated` 标记。
 - 扩展 XML 与 `generated` 目录同级：`mapper/generated/UserMapper.xml`（生成）与 `mapper/UserMapper.xml`（扩展）。
-- 可选：配置 `exampleTargetPackage` 可把 Example 类（`BaseXxxExample` + `XxxExample`）整体从 Model 包分离到独立包，
-  例如 `exampleTargetPackage=com.x.example`，则 `XxxExample` 落在 `com.x.example`，`BaseXxxExample` 落在
-  `com.x.example.generated`（与 Model 对称：Base 永远在「子类包 + `.generated`」）。
-  不配置时 Example 与 Model 同包，`BaseXxxExample` 与 `BaseXxx` 同在 `modelTargetPackage.generated`（向后兼容）。
-- 可选：配置 `exampleTargetDir` 可把 Example 类输出到完整独立目录（彻底分离，Model 目录不残留 Example），
-  例如 `exampleTargetDir=../mbg-demo-example/src/main/java`。未配置时退回 `modelTargetDir`。
+- 可选：配置 `exampleTargetPackage` 与 `exampleTargetDir`，两者**独立生效、互不依赖**，分别控制
+  Example 类的「包名」和「目录」两个维度：
+  - `exampleTargetPackage` 控制包名：配置后 `XxxExample` 落在 `exampleTargetPackage` 包，
+    `BaseXxxExample` 落在 `exampleTargetPackage.generated` 包（与 Model 对称：Base 永远在「子类包 + `.generated`」）。
+    未配置时 Example 与 Model 同包，`BaseXxxExample` 与 `BaseXxx` 同在 `modelTargetPackage.generated`。
+  - `exampleTargetDir` 控制目录：配置后 Example 类输出到该完整独立目录（Model 目录不残留 Example）；
+    未配置时退回 `modelTargetDir`。
+
+  两者组合的行为如下（「包名/目录」分别独立决定）：
+
+  | exampleTargetDir | exampleTargetPackage | 目录 | 子类 Example 包 | Base Example 包 |
+  |---|---|---|---|---|
+  | 未配 | 配置 | `modelTargetDir` | `exampleTargetPackage` | `exampleTargetPackage.generated` |
+  | 配置 | 未配 | `exampleTargetDir` | `modelTargetPackage` | `modelTargetPackage.generated` |
+  | 未配 | 未配 | `modelTargetDir` | `modelTargetPackage` | `modelTargetPackage.generated` |
+  | 配置 | 配置 | `exampleTargetDir` | `exampleTargetPackage` | `exampleTargetPackage.generated` |
+
+  > **注意**：不配置某个项时，应**删除 `generatorConfig.xml` 里对应的 `<property name="exampleTargetPackage" .../>` 行**，
+  > 而不是在 `.properties` 里注释/留空该 key。否则 `${exampleTargetPackage}` 占位符未被解析，会被当成字面量传给插件，
+  > 产出 `${exampleTargetPackage}` 这样的脏目录和 `import ${exampleTargetPackage}.XxxExample` 脏 import。
 
 ## 快速开始
 
