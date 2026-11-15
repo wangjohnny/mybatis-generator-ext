@@ -19,7 +19,7 @@
 
     <properties>
         <!-- 依赖的 mybatis-generator-ext 版本，升级时只需修改这里 -->
-        <mbg-ext.version>1.5.3-SNAPSHOT</mbg-ext.version>
+        <mbg-ext.version>1.5.4-SNAPSHOT</mbg-ext.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <skipTests>true</skipTests>
@@ -39,6 +39,7 @@
     <modules>
         <module>mbg-demo-generator</module>
         <module>mbg-demo-model</module>
+        <module>mbg-demo-example</module>
         <module>mbg-demo-mapper</module>
         <module>mbg-demo-business</module>
         <module>mbg-demo-webapp</module>
@@ -51,6 +52,11 @@
             <dependency>
                 <groupId>com.github.mybatis.generator.ext</groupId>
                 <artifactId>mbg-demo-model</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.mybatis.generator.ext</groupId>
+                <artifactId>mbg-demo-example</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

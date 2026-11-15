@@ -15,6 +15,11 @@
             <groupId>com.github.mybatis.generator.ext</groupId>
             <artifactId>mbg-demo-model</artifactId>
         </dependency>
+        <!-- Mapper 接口 import example 包的 Example 类 -->
+        <dependency>
+            <groupId>com.github.mybatis.generator.ext</groupId>
+            <artifactId>mbg-demo-example</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.github.mybatis.generator.ext</groupId>
             <artifactId>mybatis-mapper</artifactId>

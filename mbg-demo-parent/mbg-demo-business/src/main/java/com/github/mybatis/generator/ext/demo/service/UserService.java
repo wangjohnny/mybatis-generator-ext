@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.github.mybatis.generator.ext.demo.model.User;
-import com.github.mybatis.generator.ext.demo.model.UserExample;
+import com.github.mybatis.generator.ext.demo.example.UserExample;
 
 @Service
 public interface UserService {

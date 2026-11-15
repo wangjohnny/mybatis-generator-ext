@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 
 import com.github.mybatis.generator.ext.demo.mapper.UserMapper;
 import com.github.mybatis.generator.ext.demo.model.User;
-import com.github.mybatis.generator.ext.demo.model.UserExample;
+import com.github.mybatis.generator.ext.demo.example.UserExample;
 import com.github.mybatis.generator.ext.demo.service.UserService;
 
 @Service

@@ -45,6 +45,12 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
      */
     private String baseModelNamePrefix;
 
+    /**
+     * Example 类的独立包名（与 ModelAndExampleBaseClassPlugin.exampleTargetPackage 保持一致）。
+     * 未配置时为 null，表示 Example 与 Model 同包（向后兼容）。
+     */
+    private String exampleTargetPackage;
+
     public ModelAndExampleSubClassPlugin() {
         shellCallback = new DefaultShellCallback(false);
     }
@@ -61,6 +67,10 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
         if (!stringHasValue(baseModelNamePrefix)) {
             baseModelNamePrefix = ModelAndExampleBaseClassPlugin.DEFAULT_BASE_MODEL_NAME_PREFIX;
         }
+
+        // 与 ModelAndExampleBaseClassPlugin 保持一致的 exampleTargetPackage；
+        // 两个插件无法互通配置，需在 generatorConfig.xml 里各自引用同一个 properties key
+        exampleTargetPackage = properties.getProperty("exampleTargetPackage");
 
         return true;
     }
@@ -141,10 +151,28 @@ public class ModelAndExampleSubClassPlugin extends PluginAdapter {
     }
 
     private String getSubModelType(FullyQualifiedJavaType fullyQualifiedJavaType) {
+        String shortName = fullyQualifiedJavaType.getShortName();
         String type = fullyQualifiedJavaType.getFullyQualifiedName();
+
+        // 去掉 Base 前缀得到子类简单名，例如 BaseUserExample -> UserExample
+        String subShortName = shortName.startsWith(baseModelNamePrefix)
+                ? shortName.substring(baseModelNamePrefix.length())
+                : shortName;
+
+        if (type.endsWith("Example")) {
+            // Example 子类：配置了独立包 exampleTargetPackage 时落在该独立包
+            if (stringHasValue(exampleTargetPackage)) {
+                return exampleTargetPackage + "." + subShortName;
+            }
+            // 未配置时，与 Model 子类同包：去掉 generated 包段，
+            // 例如 com.x.model.generated.BaseUserExample -> com.x.model.UserExample
+            String examplePrefix = baseModelPackage + "." + baseModelNamePrefix;
+            return type.replace(examplePrefix, "");
+        }
+
+        // Model 子类：去掉 generated 包，例如 com.x.model.generated.BaseUser -> com.x.model.User
         String defaultPrefix = baseModelPackage + "." + baseModelNamePrefix;
-        String newType = type.replace(defaultPrefix, "");
-        return newType;
+        return type.replace(defaultPrefix, "");
     }
 
     /**

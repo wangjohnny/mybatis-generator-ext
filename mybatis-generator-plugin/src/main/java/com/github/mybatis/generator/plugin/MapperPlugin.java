@@ -44,6 +44,12 @@ public class MapperPlugin extends PluginAdapter {
      */
     private String baseModelNamePrefix;
 
+    /**
+     * Example 类的独立包名（与 ModelAndExampleBaseClassPlugin.exampleTargetPackage 保持一致）。
+     * 未配置时为 null，表示 Example 与 Model 同包（向后兼容）。
+     */
+    private String exampleTargetPackage;
+
     private String mapperSuperClass;
 
     public MapperPlugin() {
@@ -72,6 +78,9 @@ public class MapperPlugin extends PluginAdapter {
         if (!stringHasValue(baseModelNamePrefix)) {
             baseModelNamePrefix = ModelAndExampleBaseClassPlugin.DEFAULT_BASE_MODEL_NAME_PREFIX;
         }
+
+        // 与 ModelAndExampleBaseClassPlugin 保持一致的 exampleTargetPackage
+        exampleTargetPackage = properties.getProperty("exampleTargetPackage");
 
         return valid && valid2;
     }
@@ -154,7 +163,7 @@ public class MapperPlugin extends PluginAdapter {
             }
 
             String subModelType = getSubModelType(baseModelJavaType);
-            String subModelExampleType = subModelType + "Example";
+            String subModelExampleType = getSubModelExampleType(subModelType);
 
             System.out.println("shortName:" + shortName);
 
@@ -272,5 +281,22 @@ public class MapperPlugin extends PluginAdapter {
         String defaultPrefix = baseModelPackage + "." + baseModelNamePrefix;
         String newType = type.replace(defaultPrefix, "");
         return newType;
+    }
+
+    /**
+     * 根据 Model 子类的全限定名推导 Example 子类的全限定名。
+     * <p>
+     * 若配置了独立的 exampleTargetPackage，则 Example 子类落在该独立包（与 Model 子类不同包）；
+     * 否则与 Model 子类同包（向后兼容），直接在类名后拼 Example。
+     *
+     * @param subModelType Model 子类全限定名，如 com.x.model.User
+     * @return Example 子类全限定名，如 com.x.example.UserExample 或 com.x.model.UserExample
+     */
+    private String getSubModelExampleType(String subModelType) {
+        if (stringHasValue(exampleTargetPackage)) {
+            int indexOfLastDot = subModelType.lastIndexOf('.');
+            return exampleTargetPackage + "." + subModelType.substring(indexOfLastDot + 1) + "Example";
+        }
+        return subModelType + "Example";
     }
 }

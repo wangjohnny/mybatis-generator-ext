@@ -67,6 +67,12 @@
   - 生成 XML：`xmlTargetPackage.generated/UserMapper.xml`
 - 类名前缀 `Base` 不变，包名用 `generated` 标记。
 - 扩展 XML 与 `generated` 目录同级：`mapper/generated/UserMapper.xml`（生成）与 `mapper/UserMapper.xml`（扩展）。
+- 可选：配置 `exampleTargetPackage` 可把 Example 类（`BaseXxxExample` + `XxxExample`）整体从 Model 包分离到独立包，
+  例如 `exampleTargetPackage=com.x.example`，则 `XxxExample` 落在 `com.x.example`，`BaseXxxExample` 落在
+  `com.x.example.generated`（与 Model 对称：Base 永远在「子类包 + `.generated`」）。
+  不配置时 Example 与 Model 同包，`BaseXxxExample` 与 `BaseXxx` 同在 `modelTargetPackage.generated`（向后兼容）。
+- 可选：配置 `exampleTargetDir` 可把 Example 类输出到完整独立目录（彻底分离，Model 目录不残留 Example），
+  例如 `exampleTargetDir=../mbg-demo-example/src/main/java`。未配置时退回 `modelTargetDir`。
 
 ## 快速开始
 
