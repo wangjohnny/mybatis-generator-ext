@@ -15,7 +15,6 @@ import org.mybatis.generator.api.dom.xml.XmlElement;
  * 插件自动推导出两种形态：
  * <ul>
  * <li>表限定：{@code ${_table_alias}.COLUMN}，如 {@code o.SID}</li>
- * <li>列别名（防止 join 表同名字段冲突）：{@code ${_table_alias}_COLUMN}，如 {@code o_SID}</li>
  * </ul>
  * <p>
  * 用法（扩展 xml 里 join 时）：
@@ -24,8 +23,16 @@ import org.mybatis.generator.api.dom.xml.XmlElement;
  *     &lt;property name="_table_alias" value="o"/&gt;
  * &lt;/include&gt;
  * </pre>
- * 生成 {@code o.SID as o_SID, o.USERNAME as o_USERNAME, ...}。
+ * 生成 {@code o.SID, o.USERNAME, ...}（仅表限定，列名保持原名，便于自动映射实体）。
  * 不传 {@code _table_alias} 时走 otherwise 分支，输出纯列名（反引号包裹）。
+ * <p>
+ * <b>注意</b>：{@code <when test="'${_table_alias}' != ''">} 里的 {@code ${_table_alias}} 是
+ * <b>解析期</b>占位符（被 include 的 property 或全局 properties 替换），不是运行期 OGNL 变量。
+ * 因此「不传 property」时必须在 MyBatis 全局 {@code <properties>}（或 Spring Boot 的
+ * {@code mybatis.configuration-properties}）里预置 {@code _table_alias=}（空串），
+ * 让 {@code ${_table_alias}} 解析期被替换成空串，{@code test} 变成 {@code '' != ''} 走 otherwise。
+ * 否则不传 property 时 {@code ${_table_alias}} 未被替换、落入运行期 OGNL 求值，
+ * 在有 {@code @Param} 的方法下会因访问 ParamMap 不存在的 key 抛 {@code BindingException}。
  *
  * @author lao king
  */
@@ -51,15 +58,15 @@ public class ColumnDynamicAliasAndPrefixPlugin extends PluginAdapter {
                 columns.append(System.lineSeparator());
             }
             String columnName = column.getActualColumnName();
-            // 表限定 ${_table_alias}.COLUMN，列别名 ${_table_alias}_COLUMN（防止同名字段冲突）
-            columnsWithAlias.append(String.format("%s${_table_alias}.%s as ${_table_alias}_%s"
-                    , " ".repeat(8), columnName, columnName));
+            // 仅表限定 ${_table_alias}.COLUMN，不加列别名，保证列名仍是原始列名、可自动映射实体
+            columnsWithAlias.append(String.format("%s${_table_alias}.%s"
+                    , " ".repeat(8), columnName));
             columns.append(String.format("%s`%s`", " ".repeat(8), columnName));
         }
 
         String content = """
                 <choose>
-                    <when test="_table_alias != null and _table_alias != ''">
+                    <when test="'${_table_alias}' != ''">
                 ${columnsWithAlias}
                     </when>
                     <otherwise>
