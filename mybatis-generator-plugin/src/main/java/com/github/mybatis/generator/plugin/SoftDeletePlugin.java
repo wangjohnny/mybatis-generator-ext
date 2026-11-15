@@ -21,7 +21,8 @@ import org.mybatis.generator.api.dom.xml.XmlElement;
  * <li>{@code deleted_at} = 删除时间（方法参数传入，为 null 时用数据库 {@code CURRENT_TIMESTAMP}）</li>
  * </ul>
  * <p>
- * 对应 {@link com.github.mybatis.mapper.GenericMapper} 上新增的两个方法签名（更新值在前、条件在后）：
+ * 对应 {@link com.github.mybatis.mapper.CrudMapper#softDeleteByPrimaryKey} 与
+ * {@link com.github.mybatis.mapper.GenericMapper#softDeleteByExample} 两个方法签名（更新值在前、条件在后）：
  * <ul>
  * <li>{@code int softDeleteByPrimaryKey(Long deletedBy, LocalDateTime deletedAt, PK id)} —— 按主键软删</li>
  * <li>{@code int softDeleteByExample(Long deletedBy, LocalDateTime deletedAt, TE example)} —— 按条件批量软删</li>

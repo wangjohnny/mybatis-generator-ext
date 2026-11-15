@@ -35,7 +35,7 @@
 |---|---|
 | `mybatis-pagination` | `Pagination<T>` 分页对象 |
 | `mybatis-model` | `BaseModel<PK>`、`BaseModelExample`、`BaseCriteria`、`Criterion` 基础模型 |
-| `mybatis-mapper` | `GenericMapper<T, TE, PK>` 通用 Mapper 接口 |
+| `mybatis-mapper` | `CrudMapper<T, PK>` 主键 CRUD 基座 + `GenericMapper<T, TE, PK>` 通用 Mapper 接口 |
 | `mybatis-service` | `GenericService` / `GenericServiceImpl` 通用 Service |
 | `mybatis-generator-plugin` | MBG 插件集合（核心） |
 | `mbg-demo-parent` | 示例工程（未纳入根 pom modules） |
@@ -71,6 +71,19 @@
 ## 快速开始
 
 完整示例见 [mbg-demo-parent](https://github.com/wangjohnny/mbg-demo-parent)（或本仓库 `mbg-demo-parent` 目录），演示了基本生成与 `EntityInheritancePlugin` 的实体继承能力。
+
+## Mapper 接口分层（mybatis-mapper）
+
+通用 Mapper 拆成两层，职责分明：
+
+| 接口 | 泛型 | 职责 |
+|---|---|---|
+| `CrudMapper<T, PK>` | 实体、主键 | 按主键的 CRUD + 软删除 `softDeleteByPrimaryKey`，不涉及 example |
+| `GenericMapper<T, TE, PK>` | 实体、example、主键 | 继承 `CrudMapper`，追加按 example 条件的批量操作 + `softDeleteByExample` |
+
+- 继承关系：`GenericMapper` **extends** `CrudMapper`，因此实体表 Mapper 继承 `GenericMapper` 即可获得全部方法。
+- 对于不需要 example 的简单表（如关系表），可让 Mapper 直接继承 `CrudMapper`。
+- 方法命名遵循「更新值在前、条件在后」：如 `softDeleteByPrimaryKey(deletedBy, deletedAt, id)`、`softDeleteByExample(deletedBy, deletedAt, example)`。
 
 ## 构建
 
