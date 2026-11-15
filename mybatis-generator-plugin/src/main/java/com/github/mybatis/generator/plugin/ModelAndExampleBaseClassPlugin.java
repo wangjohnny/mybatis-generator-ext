@@ -143,13 +143,6 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 	 */
 	private java.lang.reflect.Field isMergeableFid = null;
 
-	/**
-	 * 三个参数用于做数据中转，否则xml文件里Model类、Example类 PrimaryKey 类的package 的路径不对，这里是为了让xml文件用正确的Model类
-	 */
-	private String modelClassName;
-	private String exampleClassName;
-	private String primaryKeyClassName;
-
 	public ModelAndExampleBaseClassPlugin() {
 		shellCallback = new DefaultShellCallback(false);
 
@@ -167,18 +160,17 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 
 	@Override
 	public void initialized(IntrospectedTable introspectedTable) {
-		// 初始化两参数为空
-		modelClassName = null;
-		exampleClassName = null;
-		primaryKeyClassName = null;
+		// 这里只用局部变量做中转：先读 MBG 默认算出的子类名，再改写成 Base 名。
+		// 切勿改成单实例字段承载这些值——MBG 生成是「先对所有表 initialized()，再逐表生成」两阶段，
+		// 单实例字段到第二阶段只剩最后一张表的值，会导致 XML 里 Model/Example 类型串表。
 
-		modelClassName = introspectedTable.getBaseRecordType();
+		String modelClassName = introspectedTable.getBaseRecordType();
 		introspectedTable.setBaseRecordType(genBaseClassName(modelClassName));
 
-		exampleClassName = introspectedTable.getExampleType();
+		String exampleClassName = introspectedTable.getExampleType();
 		introspectedTable.setExampleType(genBaseExampleClassName(exampleClassName));
 
-		primaryKeyClassName = introspectedTable.getPrimaryKeyType();
+		String primaryKeyClassName = introspectedTable.getPrimaryKeyType();
 		int indexOfLastDot = primaryKeyClassName.lastIndexOf('.');
 		String newPrimaryKeyClassName = fullModelPackage + "." + primaryKeyClassName.substring(indexOfLastDot + 1);
 		introspectedTable.setPrimaryKeyType(newPrimaryKeyClassName);
@@ -306,18 +298,12 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 		String tableName = introspectedTable.getFullyQualifiedTable().getIntrospectedTableName();
         System.out.printf("===============开始：生成表 %s 的Mapper扩展xml文件================%n", tableName);
 
-		// 注意：不能依赖单实例字段 modelClassName / exampleClassName 来恢复类型。
-		// MBG 生成流程是「先对所有表调 initialized()，再逐表调本方法」，
-		// 单实例字段到本阶段只剩最后一张表的值，会导致所有 xml 的 Model/Example 类型串表。
-		// 这里改为从 introspectedTable 自身当前状态推导：
+		// 这里必须从 introspectedTable 自身当前状态推导，不能用任何插件级缓存字段：
+		// MBG 生成是「先对所有表 initialized()，再逐表调本方法」，缓存字段到本阶段只剩最后一张表的值，会导致串表。
 		// initialized() 已把 baseRecordType 改成 model.generated.BaseXxx、exampleType 改成
 		// Base Example 类名（如 example.generated.BaseXxxExample），据此反推回子类名即可，天然按表隔离。
 		introspectedTable.setBaseRecordType(genModelSubClassFromBase(introspectedTable.getBaseRecordType()));
 		introspectedTable.setExampleType(genExampleSubClassFromBase(introspectedTable.getExampleType()));
-
-//		if (primaryKeyClassName != null) {
-//			introspectedTable.setPrimaryKeyType(primaryKeyClassName);
-//		}
 
 		List<GeneratedXmlFile> allXmlFiles = new ArrayList<GeneratedXmlFile>(1);
 		List<GeneratedXmlFile> xmlFiles = introspectedTable.getGeneratedXmlFiles();
