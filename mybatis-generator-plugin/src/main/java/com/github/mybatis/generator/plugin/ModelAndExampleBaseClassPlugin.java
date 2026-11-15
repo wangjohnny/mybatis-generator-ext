@@ -270,6 +270,52 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 		return true;
 	}
 
+	/**
+	 * 丢弃第一次生成的「Base 名」主 xml 中间产物，避免写盘两次。
+	 *
+	 * <h2>为什么主 xml 需要「生成两次」？</h2>
+	 * <p>
+	 * 本插件的核心机制是「Base 类 / 子类分离」：{@link #initialized(IntrospectedTable)} 里把
+	 * {@code baseRecordType} / {@code exampleType} 从子类名（{@code model.User}）改写成 Base 名
+	 * （{@code model.generated.BaseUser}），这样 MBG 的 Java 生成器才能把 Model / Example 的 Base 类
+	 * 生成到 generated 包。但这个改写对「Java 生成」和「XML 生成」的影响是矛盾的：
+	 * <ul>
+	 *   <li><b>Java 生成</b>（{@code getGeneratedJavaFiles}）需要 Base 名：生成 {@code generated.BaseUser} 类；</li>
+	 *   <li><b>XML 生成</b>（{@code getGeneratedXmlFiles}）需要子类名：resultMap 的 type、parameterType
+	 *       要引用的是子类 {@code model.User}，而非 Base 类。</li>
+	 * </ul>
+	 * <p>
+	 * 而 MBG 1.4.2 的生成时序（{@code Context.generateFiles}）是：
+	 * <pre>
+	 *   getGeneratedJavaFiles()          // Java 生成，读 Base 名 → 正确
+	 *   getGeneratedXmlFiles()           // XML 生成①，此时 type 仍是 Base 名 → resultMap type 错误
+	 *   contextGenerateAdditionalXmlFiles()  // 插件钩子：在这里恢复子类名，二次调用 getGeneratedXmlFiles()
+	 * </pre>
+	 * 「Java 生成」和「XML 生成」之间<b>没有任何插件钩子</b>可供恢复 type，所以插件只能在
+	 * {@link #contextGenerateAdditionalXmlFiles} 里先把 type 恢复成子类名，再二次调用
+	 * {@code getGeneratedXmlFiles()} 重新生成正确的主 xml。这就导致主 xml 被生成了两次：
+	 * 第一次（XML 生成①）是无用的 Base 名中间产物，第二次才是正确的子类名产物。
+	 *
+	 * <h2>本方法的作用</h2>
+	 * <p>
+	 * 通过判断 {@code baseRecordType} 是否仍是 Base 名（以 {@code fullModelPackage + "."} 开头），
+	 * 丢弃第一次（XML 生成①）产生的 Base 名中间产物，使其不进写盘列表，写盘从两次降为一次。
+	 * 第二次（在 contextGenerateAdditionalXmlFiles 里 type 已恢复子类名）调用本方法时，
+	 * {@code baseRecordType} 已是子类名，返回 true 保留。
+	 *
+	 * @param sqlMap 本次生成的 sqlMap 文件
+	 * @param introspectedTable 当前表
+	 * @return Base 名中间产物返回 false 丢弃，其余返回 true
+	 */
+	@Override
+	public boolean sqlMapGenerated(GeneratedXmlFile sqlMap, IntrospectedTable introspectedTable) {
+		String baseRecordType = introspectedTable.getBaseRecordType();
+		if (baseRecordType != null && baseRecordType.startsWith(fullModelPackage + ".")) {
+			return false;
+		}
+		return true;
+	}
+
 	/*
 	 * 生成新的xml文件 ,覆盖原来存在文件
 	 * 
@@ -289,6 +335,10 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 		introspectedTable.setBaseRecordType(genModelSubClassFromBase(introspectedTable.getBaseRecordType()));
 		introspectedTable.setExampleType(genExampleSubClassFromBase(introspectedTable.getExampleType()));
 
+		// 恢复子类名后，重新调用 getGeneratedXmlFiles() 生成正确（子类名）的主 xml。
+		// 这是「主 xml 生成两次」的第二次：第一次（Context 循环里的 getGeneratedXmlFiles）type 还是 Base 名，
+		// 其 resultMap type 错误，已被 sqlMapGenerated 钩子丢弃；这里生成的才是正确产物。
+		// 详见 sqlMapGenerated 方法的 javadoc（解释为什么需要生成两次）。
 		List<GeneratedXmlFile> allXmlFiles = new ArrayList<GeneratedXmlFile>(1);
 		List<GeneratedXmlFile> xmlFiles = introspectedTable.getGeneratedXmlFiles();
 
