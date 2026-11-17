@@ -52,6 +52,18 @@ public interface CrudMapper<T extends Serializable, PK extends Serializable> {
     Optional<T> selectByPrimaryKey(PK id);
 
     /**
+     * 按主键查询「全部记录（含已软删除）」，返回 {@link Optional} 包装的实体（不存在时为 {@link Optional#empty()}）。
+     * <p>
+     * 与 {@link #selectByPrimaryKey} 的区别：本方法<b>不做软删除过滤</b>，即使用于软删除的表也能查到
+     * 已被软删除（{@code is_deleted = 1}）的记录；而 {@link #selectByPrimaryKey} 对含软删除标记列的表
+     * 会自动追加 {@code is_deleted = 0} 条件。对于不含软删除标记列的表，两者行为完全一致。
+     *
+     * @param id 主键
+     * @return 实体（含已删除），可能为空
+     */
+    Optional<T> selectByPrimaryKeyRaw(PK id);
+
+    /**
      * 按主键选择性更新：只更新非 null 字段。
      *
      * @param record 实体

@@ -3,6 +3,7 @@ package com.github.mybatis.generator.plugin;
 import static org.mybatis.generator.internal.util.StringUtility.stringHasValue;
 
 import java.util.List;
+import java.util.Map;
 
 import org.mybatis.generator.api.IntrospectedColumn;
 import org.mybatis.generator.api.IntrospectedTable;
@@ -10,17 +11,19 @@ import org.mybatis.generator.api.PluginAdapter;
 import org.mybatis.generator.api.dom.xml.Attribute;
 import org.mybatis.generator.api.dom.xml.Document;
 import org.mybatis.generator.api.dom.xml.TextElement;
+import org.mybatis.generator.api.dom.xml.VisitableElement;
 import org.mybatis.generator.api.dom.xml.XmlElement;
 
 /**
- * 软删除插件：为「含有软删除标记列」的表生成 {@code softDeleteByPrimaryKey} / {@code softDeleteByExample}
- * 两个 update SQL。软删除时同时更新三列：
+ * 软删除插件：为「含有软删除标记列」的表生成软删除相关 SQL。
+ * <p>
+ * 功能一 —— 软删除写操作：生成 {@code softDeleteByPrimaryKey} / {@code softDeleteByExample} 两个 update SQL，
+ * 软删除时同时更新三列：
  * <ul>
  * <li>{@code is_deleted} 置 1（软删除标记）</li>
  * <li>{@code deleted_by} = 删除人 id（方法参数传入）</li>
  * <li>{@code deleted_at} = 删除时间（方法参数传入，为 null 时用数据库 {@code CURRENT_TIMESTAMP}）</li>
  * </ul>
- * <p>
  * 对应 {@link com.github.mybatis.mapper.CrudMapper#softDeleteByPrimaryKey} 与
  * {@link com.github.mybatis.mapper.GenericMapper#softDeleteByExample} 两个方法签名（更新值在前、条件在后）：
  * <ul>
@@ -28,35 +31,62 @@ import org.mybatis.generator.api.dom.xml.XmlElement;
  * <li>{@code int softDeleteByExample(Long deletedBy, LocalDateTime deletedAt, TE example)} —— 按条件批量软删</li>
  * </ul>
  * <p>
- * 判断逻辑：仅当表含软删除标记列时，才往生成的 XML（{@code generated/XxxMapper.xml}）里追加
- * 这两个 statement；否则不生成。未生成 SQL 的表调用 {@code softDeleteByPrimaryKey} 时，MyBatis 会抛出
- * {@code Invalid bound statement} 异常，即「该表没有此字段」的运行时错误。
+ * 功能二 —— 查询自动过滤软删除：为含软删除标记列的表，在查询类 statement 里追加 {@code is_deleted = 0} 条件，
+ * 过滤掉已软删除的记录：
+ * <ul>
+ * <li>{@code selectByPrimaryKey}：追加 {@code and is_deleted = 0}，只查未删除记录；</li>
+ * <li>所有 ByExample 方法（{@code selectByExample} / {@code countByExample} / {@code selectByExampleWithBLOBs} /
+ * {@code updateByExample} / {@code updateByExampleSelective} / {@code deleteByExample}）：通过往共享的
+ * {@code Example_Where_Clause} 的 {@code <where>} 标签内追加 {@code and is_deleted = 0}，一并过滤；</li>
+ * <li>{@code selectByPrimaryKeyRaw}（新增，对应 {@link com.github.mybatis.mapper.CrudMapper#selectByPrimaryKeyRaw}）：
+ * 克隆 {@code selectByPrimaryKey} 生成，但<b>不加</b> {@code is_deleted} 条件，用于查全部记录（含已删除）。</li>
+ * </ul>
+ * <p>
+ * 判断逻辑：仅当表含软删除标记列时，上述过滤才生效；无软删除标记列（或配置的列名写错、不存在）时，
+ * 所有查询都退化为普通查询，{@code selectByPrimaryKeyRaw} 与 {@code selectByPrimaryKey} 行为一致。
+ * 软删除写操作（{@code softDeleteByPrimaryKey} / {@code softDeleteByExample}）未生成 SQL 时，
+ * 调用会抛 MyBatis {@code Invalid bound statement} 异常，即「该表没有此字段」的运行时错误。
  * <p>
  * 约定：含软删除标记列的表必定同时含 {@code deleted_by} 与 {@code deleted_at} 列，
- * 因此插件固定更新这三列，不做逐列存在性判断。
+ * 因此软删除写操作固定更新这三列，不做逐列存在性判断。
  * <p>
- * 软删除标记列名可配置（{@code softDeleteColumn}），默认兼容两种常见命名：
- * {@code is_deleted} 与 {@code is_delete}，任一张表命中其一即可。
+ * 软删除标记列名可配置（{@code softDeleteColumn}），配置优先级从高到低：
+ * <ol>
+ * <li>表级别（table 元素上 {@code <property name="softDeleteColumn" .../>}）</li>
+ * <li>插件级别（SoftDeletePlugin 上 {@code <property name="softDeleteColumn" .../>}）</li>
+ * <li>默认 {@code is_deleted} / {@code is_delete}（任一张表命中其一即可）</li>
+ * </ol>
+ * 均支持逗号分隔多个候选列名；无论哪一级，只要表里实际没有匹配的软删除标记列，
+ * 就不会往 SQL 里加任何软删除条件（整体退化为普通查询）。
  * <p>
  * 用法（generatorConfig.xml）：
  * <pre>
+ * &lt;!-- 表级别：仅对 user 表生效，优先级最高 --&gt;
+ * &lt;table tableName="user"&gt;
+ *     &lt;property name="softDeleteColumn" value="is_deleted"/&gt;
+ * &lt;/table&gt;
+ * &lt;!-- 插件级别：对未单独配置的所有表生效 --&gt;
  * &lt;plugin type="com.github.mybatis.generator.plugin.SoftDeletePlugin"&gt;
  *     &lt;property name="softDeleteColumn" value="is_deleted"/&gt;
  * &lt;/plugin&gt;
  * </pre>
+ * 两者都不配置时，默认按 {@code is_deleted} / {@code is_delete} 两个候选列名匹配。
  *
  * @author oking
  */
 public class SoftDeletePlugin extends PluginAdapter {
 
-    /** 软删除标记列名配置项（可自定义，逗号分隔可配多个候选列名） */
+    /** 软删除标记列名配置项（table 级与 plugin 级共用此 key，可自定义，逗号分隔可配多个候选列名） */
     private static final String PROP_SOFT_DELETE_COLUMN = "softDeleteColumn";
 
     /** 默认兼容的软删除标记列名 */
     private static final String[] DEFAULT_SOFT_DELETE_COLUMNS = { "is_deleted", "is_delete" };
 
-    /** 软删除标记置位的目标值 */
+    /** 软删除标记置位的目标值（已删除） */
     private static final String DELETED_VALUE = "1";
+
+    /** 软删除标记的未删除值（查询过滤用） */
+    private static final String NOT_DELETED_VALUE = "0";
 
     /** 软删除审计列：删除人 */
     private static final String DELETED_BY_COLUMN = "deleted_by";
@@ -64,18 +94,52 @@ public class SoftDeletePlugin extends PluginAdapter {
     /** 软删除审计列：删除时间 */
     private static final String DELETED_AT_COLUMN = "deleted_at";
 
-    /** 软删除标记列名候选（去空格后的小写形式用于比对） */
-    private String[] softDeleteColumnCandidates;
+    /** selectByPrimaryKey 的克隆方法名：查全部记录（含已删除），不加软删除过滤 */
+    private static final String SELECT_BY_PRIMARY_KEY_RAW = "selectByPrimaryKeyRaw";
+
+    /**
+     * 暂存每张表的 selectByPrimaryKey 未加软删除过滤前的克隆元素，供生成 selectByPrimaryKeyRaw 使用。
+     * <p>
+     * 为什么用 Map 而非单实例字段：MBG 对多张表「先逐表生成 XML 元素（触发
+     * {@link #sqlMapSelectByPrimaryKeyElementGenerated}）再逐表生成文档（触发
+     * {@link #sqlMapDocumentGenerated}）」，PluginAggregator 跨表复用同一插件实例，
+     * 单实例字段会在多表场景串表读错（与项目里 EntityInheritancePlugin 的既有教训一致）。
+     */
+    private final Map<IntrospectedTable, XmlElement> selectByPrimaryKeyRawRegistry = new java.util.HashMap<>();
+
+    /** 插件级（SoftDeletePlugin property）软删除标记列候选名，作为表级配置的兜底 */
+    private String[] pluginLevelCandidates;
 
     @Override
     public boolean validate(List<String> warnings) {
+        // 插件级配置：仅在 table 级未配置时作为兜底使用
         String configured = properties.getProperty(PROP_SOFT_DELETE_COLUMN);
         if (stringHasValue(configured)) {
-            softDeleteColumnCandidates = splitCandidates(configured);
+            pluginLevelCandidates = splitCandidates(configured);
         } else {
-            softDeleteColumnCandidates = DEFAULT_SOFT_DELETE_COLUMNS;
+            pluginLevelCandidates = null;
         }
         return true;
+    }
+
+    /**
+     * 取当前表的软删除标记列候选名（去空格后的小写形式用于比对）。
+     * 优先级从高到低：
+     * <ol>
+     * <li>表级 property {@code softDeleteColumn}（table 元素上配置）</li>
+     * <li>插件级 property {@code softDeleteColumn}（SoftDeletePlugin 上配置）</li>
+     * <li>默认 {@code is_deleted} / {@code is_delete}</li>
+     * </ol>
+     */
+    private String[] resolveCandidates(IntrospectedTable introspectedTable) {
+        String tableConfigured = introspectedTable.getTableConfigurationProperty(PROP_SOFT_DELETE_COLUMN);
+        if (stringHasValue(tableConfigured)) {
+            return splitCandidates(tableConfigured);
+        }
+        if (pluginLevelCandidates != null) {
+            return pluginLevelCandidates;
+        }
+        return DEFAULT_SOFT_DELETE_COLUMNS;
     }
 
     /**
@@ -91,35 +155,34 @@ public class SoftDeletePlugin extends PluginAdapter {
     }
 
     /**
+     * 替换元素的同名属性值；属性不存在则追加。{@link Attribute} 为不可变对象（name/value 均 final），
+     * 无法直接 setValue，故采用「删除旧属性 + 新增同名属性」的方式实现替换。
+     */
+    private void replaceAttribute(XmlElement element, String name, String value) {
+        element.getAttributes().removeIf(attribute -> name.equals(attribute.getName()));
+        element.addAttribute(new Attribute(name, value));
+    }
+
+    /**
      * 判断当前表是否含软删除标记列。命中任意一个候选列名（忽略大小写）即认为有。
      */
     private boolean hasSoftDeleteColumn(IntrospectedTable introspectedTable) {
-        for (IntrospectedColumn column : introspectedTable.getAllColumns()) {
-            String actualColumnName = column.getActualColumnName();
-            if (actualColumnName == null) {
-                continue;
-            }
-            String lower = actualColumnName.toLowerCase();
-            for (String candidate : softDeleteColumnCandidates) {
-                if (candidate.equals(lower)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return resolveSoftDeleteColumnName(introspectedTable) != null;
     }
 
     /**
      * 取软删除标记列的实际列名（保留数据库里的原始大小写，保证 SQL 正确）。
+     * 无匹配列（未配置此列或配置的列名写错）时返回 null。
      */
     private String resolveSoftDeleteColumnName(IntrospectedTable introspectedTable) {
+        String[] candidates = resolveCandidates(introspectedTable);
         for (IntrospectedColumn column : introspectedTable.getAllColumns()) {
             String actualColumnName = column.getActualColumnName();
             if (actualColumnName == null) {
                 continue;
             }
             String lower = actualColumnName.toLowerCase();
-            for (String candidate : softDeleteColumnCandidates) {
+            for (String candidate : candidates) {
                 if (candidate.equals(lower)) {
                     return actualColumnName;
                 }
@@ -148,9 +211,77 @@ public class SoftDeletePlugin extends PluginAdapter {
         // 按条件软删
         root.addElement(buildSoftDeleteByExampleElement(introspectedTable, softDeleteColumn));
 
-        System.out.printf("表 %s 含软删除列 %s，已生成 softDeleteByPrimaryKey / softDeleteByExample 语句%n",
+        // 生成 selectByPrimaryKeyRaw：克隆的未加过滤版本（id 已在克隆时改为 selectByPrimaryKeyRaw），直接追加到文档
+        XmlElement rawElement = selectByPrimaryKeyRawRegistry.remove(introspectedTable);
+        if (rawElement != null) {
+            root.addElement(rawElement);
+        }
+
+        System.out.printf("表 %s 含软删除列 %s，已生成 softDelete / 查询过滤 / selectByPrimaryKeyRaw 相关语句%n",
                 introspectedTable.getFullyQualifiedTable().getIntrospectedTableName(),
                 softDeleteColumn);
+
+        return true;
+    }
+
+    /**
+     * selectByPrimaryKey 元素构建完成、加入父级之前触发：
+     * 有软删除列时，先克隆一份未加过滤的原始元素（用于生成 selectByPrimaryKeyRaw），
+     * 再往原元素末尾追加 {@code and is_deleted = 0}，过滤已软删除的记录。
+     */
+    @Override
+    public boolean sqlMapSelectByPrimaryKeyElementGenerated(XmlElement element,
+            IntrospectedTable introspectedTable) {
+        if (!hasSoftDeleteColumn(introspectedTable)) {
+            return true;
+        }
+        String softDeleteColumn = resolveSoftDeleteColumnName(introspectedTable);
+        if (!stringHasValue(softDeleteColumn)) {
+            return true;
+        }
+
+        // 先克隆「未加过滤」的原始元素，改 id 为 selectByPrimaryKeyRaw，暂存给 sqlMapDocumentGenerated 使用
+        // 注：XmlElement(XmlElement) 拷贝构造器会新建独立的 attributes / elements List（浅拷贝元素引用），
+        //     因此克隆体不会受到后续往原元素追加过滤条件的影响。
+        XmlElement rawElement = new XmlElement(element);
+        replaceAttribute(rawElement, "id", SELECT_BY_PRIMARY_KEY_RAW);
+        selectByPrimaryKeyRawRegistry.put(introspectedTable, rawElement);
+
+        // 再往原元素末尾追加软删除过滤条件
+        element.addElement(new TextElement("and " + softDeleteColumn + " = " + NOT_DELETED_VALUE));
+
+        return true;
+    }
+
+    /**
+     * Example_Where_Clause 片段生成完成时触发：往 {@code <where>} 标签内追加 {@code and is_deleted = 0}，
+     * 使所有复用该片段的方法（selectByExample / countByExample / selectByExampleWithBLOBs /
+     * updateByExample / updateByExampleSelective / deleteByExample）都自动过滤已软删除的记录。
+     * <p>
+     * {@code Example_Where_Clause} 结构为 {@code <sql><where>...动态条件...</where></sql>}，
+     * 其中 {@code <where>} 是 MyBatis 动态标签，条件为空时自动省略 {@code where} 关键字、
+     * 并去除首条 {@code and}，因此把静态过滤条件放进 {@code <where>} 内即可在 example 为空时
+     * 仍生成合法的 {@code where is_deleted = 0}。
+     */
+    @Override
+    public boolean sqlMapExampleWhereClauseElementGenerated(XmlElement element,
+            IntrospectedTable introspectedTable) {
+        if (!hasSoftDeleteColumn(introspectedTable)) {
+            return true;
+        }
+        String softDeleteColumn = resolveSoftDeleteColumnName(introspectedTable);
+        if (!stringHasValue(softDeleteColumn)) {
+            return true;
+        }
+
+        // element 是 <sql id="Example_Where_Clause">，定位其子 <where> 元素
+        for (VisitableElement child : element.getElements()) {
+            if (child instanceof XmlElement && "where".equals(((XmlElement) child).getName())) {
+                ((XmlElement) child).addElement(
+                        new TextElement("and " + softDeleteColumn + " = " + NOT_DELETED_VALUE));
+                break;
+            }
+        }
 
         return true;
     }
