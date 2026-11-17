@@ -130,16 +130,35 @@ public class SoftDeletePlugin extends PluginAdapter {
      * <li>插件级 property {@code softDeleteColumn}（SoftDeletePlugin 上配置）</li>
      * <li>默认 {@code is_deleted} / {@code is_delete}</li>
      * </ol>
+     *
+     * @return 候选列名解析结果，含「是否来自显式配置」标记（用于区分配置错误与默认不匹配两种处理）
      */
-    private String[] resolveCandidates(IntrospectedTable introspectedTable) {
+    private SoftDeleteColumnCandidates resolveCandidates(IntrospectedTable introspectedTable) {
         String tableConfigured = introspectedTable.getTableConfigurationProperty(PROP_SOFT_DELETE_COLUMN);
         if (stringHasValue(tableConfigured)) {
-            return splitCandidates(tableConfigured);
+            return new SoftDeleteColumnCandidates(splitCandidates(tableConfigured), true);
         }
         if (pluginLevelCandidates != null) {
-            return pluginLevelCandidates;
+            return new SoftDeleteColumnCandidates(pluginLevelCandidates, true);
         }
-        return DEFAULT_SOFT_DELETE_COLUMNS;
+        return new SoftDeleteColumnCandidates(DEFAULT_SOFT_DELETE_COLUMNS, false);
+    }
+
+    /**
+     * 软删除标记列候选名的解析结果：候选列名数组 + 是否来自显式配置。
+     * <p>
+     * {@code explicitlyConfigured=true} 表示候选来自 table 级或 plugin 级的 {@code softDeleteColumn} 配置；
+     * 此时若表里无任何匹配列，属于「配置错误」，应报错中断。{@code false} 表示来自默认值
+     * {@code is_deleted}/{@code is_delete}，表里无匹配列属正常情况（如纯关系表），仅提示、不中断。
+     */
+    private static final class SoftDeleteColumnCandidates {
+        final String[] candidates;
+        final boolean explicitlyConfigured;
+
+        SoftDeleteColumnCandidates(String[] candidates, boolean explicitlyConfigured) {
+            this.candidates = candidates;
+            this.explicitlyConfigured = explicitlyConfigured;
+        }
     }
 
     /**
@@ -172,10 +191,18 @@ public class SoftDeletePlugin extends PluginAdapter {
 
     /**
      * 取软删除标记列的实际列名（保留数据库里的原始大小写，保证 SQL 正确）。
-     * 无匹配列（未配置此列或配置的列名写错）时返回 null。
+     * <p>
+     * 无匹配列时按候选来源分别处理：
+     * <ul>
+     * <li>候选来自显式配置（table 级 / plugin 级的 {@code softDeleteColumn}）→ 视为<b>配置错误</b>，
+     * 抛出 {@link RuntimeException} 中断生成，明确提示用户检查字段名；</li>
+     * <li>候选来自默认值（{@code is_deleted}/{@code is_delete}）→ 属正常情况（如纯关系表无软删字段），
+     * 静默返回 null，不中断，整体退化为普通查询（提示由调用方统一打印）。</li>
+     * </ul>
      */
     private String resolveSoftDeleteColumnName(IntrospectedTable introspectedTable) {
-        String[] candidates = resolveCandidates(introspectedTable);
+        SoftDeleteColumnCandidates resolved = resolveCandidates(introspectedTable);
+        String[] candidates = resolved.candidates;
         for (IntrospectedColumn column : introspectedTable.getAllColumns()) {
             String actualColumnName = column.getActualColumnName();
             if (actualColumnName == null) {
@@ -188,6 +215,17 @@ public class SoftDeletePlugin extends PluginAdapter {
                 }
             }
         }
+
+        if (resolved.explicitlyConfigured) {
+            // 显式配置了字段名但表里不存在：配置错误，报错中断
+            throw new RuntimeException(String.format(
+                    "表 %s 的软删除字段配置错误：配置的 softDeleteColumn=[%s] 在表中不存在，"
+                            + "请检查 table 元素或 SoftDeletePlugin 的 softDeleteColumn 配置。",
+                    introspectedTable.getFullyQualifiedTable().getIntrospectedTableName(),
+                    String.join(", ", candidates)));
+        }
+
+        // 默认候选 is_deleted/is_delete 都不存在：正常情况，静默返回 null（退化）
         return null;
     }
 
@@ -195,6 +233,11 @@ public class SoftDeletePlugin extends PluginAdapter {
     public boolean sqlMapDocumentGenerated(Document document, IntrospectedTable introspectedTable) {
         // 无软删除标记列的表不生成 softDelete 相关 SQL，调用时抛 Invalid bound statement
         if (!hasSoftDeleteColumn(introspectedTable)) {
+            // 仅当候选来自默认值（非显式配置）时才走到这里；显式配置不匹配已在 resolveSoftDeleteColumnName 抛异常。
+            // 这里统一打印一次「无软删除字段」的提示（纯关系表等正常场景，不中断）。
+            System.out.printf("表 %s 不含软删除标记列（默认候选 is_deleted/is_delete 均未命中），"
+                    + "软删除过滤与 softDelete 相关语句将不生成。%n",
+                    introspectedTable.getFullyQualifiedTable().getIntrospectedTableName());
             return true;
         }
 
