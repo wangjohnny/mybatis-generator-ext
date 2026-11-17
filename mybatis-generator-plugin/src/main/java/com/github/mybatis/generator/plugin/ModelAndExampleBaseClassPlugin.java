@@ -562,16 +562,30 @@ public class ModelAndExampleBaseClassPlugin extends PluginAdapter {
 
 		JavaFormatter javaFormatter = context.getJavaFormatter();
 
-		// Base Example 类 → exampleTargetDir
+		// Base Example 类 → exampleTargetDir（生成的可覆盖产物，无条件生成）
 		answer.add(new GeneratedJavaFile(exampleClass, exampleTargetDir, javaFormatter));
 
-		// Example 子类 → exampleTargetDir（去掉 Base 前缀、落到 exampleTargetPackage 包）
+		// Example 子类 → exampleTargetDir（去掉 Base 前缀、落到 exampleTargetPackage 包）。
+		// 子类是「修改的不生成」的手写产物：文件已存在则跳过，避免覆盖用户手写内容或生成 .1 副本，
+		// 与 ModelAndExampleSubClassPlugin 的子类生成逻辑保持一致。
 		String subExampleType = genExampleSubClassFromBase(exampleClass.getType().getFullyQualifiedName());
-		TopLevelClass subExampleClass = new TopLevelClass(subExampleType);
-		subExampleClass.setVisibility(org.mybatis.generator.api.dom.java.JavaVisibility.PUBLIC);
-		subExampleClass.addImportedType(exampleClass.getType());
-		subExampleClass.setSuperClass(exampleClass.getType());
-		answer.add(new GeneratedJavaFile(subExampleClass, exampleTargetDir, javaFormatter));
+		int lastDot = subExampleType.lastIndexOf('.');
+		String subExamplePackage = subExampleType.substring(0, lastDot);
+		String subExampleFileName = subExampleType.substring(lastDot + 1) + ".java";
+
+		try {
+			File subExampleDir = shellCallback.getDirectory(exampleTargetDir, subExamplePackage);
+			File subExampleFile = new File(subExampleDir, subExampleFileName);
+			if (!subExampleFile.exists()) {
+				TopLevelClass subExampleClass = new TopLevelClass(subExampleType);
+				subExampleClass.setVisibility(org.mybatis.generator.api.dom.java.JavaVisibility.PUBLIC);
+				subExampleClass.addImportedType(exampleClass.getType());
+				subExampleClass.setSuperClass(exampleClass.getType());
+				answer.add(new GeneratedJavaFile(subExampleClass, exampleTargetDir, javaFormatter));
+			}
+		} catch (ShellException e) {
+			e.printStackTrace();
+		}
 
 		return answer;
 	}
