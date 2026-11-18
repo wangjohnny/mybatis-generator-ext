@@ -31,6 +31,8 @@
         </plugin>
         <plugin type="com.github.mybatis.generator.plugin.SoftDeletePlugin">
         </plugin>
+        <plugin type="com.github.mybatis.generator.plugin.BatchOperationPlugin">
+        </plugin>
         <plugin type="com.github.mybatis.generator.plugin.MapperPlugin">
             <property name="mapperTargetDir" value="${mapperTargetDir}"/>
             <property name="mapperTargetPackage" value="${mapperTargetPackage}"/>

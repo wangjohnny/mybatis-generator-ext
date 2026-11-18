@@ -2,6 +2,7 @@ package com.github.mybatis.mapper;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.Optional;
 
 import org.apache.ibatis.annotations.Param;
@@ -42,6 +43,17 @@ public interface CrudMapper<T extends Serializable, PK extends Serializable> {
      * @return 受影响行数
      */
     int insertSelective(T record);
+
+    /**
+     * 批量插入：一次性插入多条记录，所有字段（含 null）都会写入 insert 语句。
+     * <p>
+     * SQL 采用 MySQL 多值 values 语法（单条 SQL，性能最优），与 {@link #insert} 使用相同的列集合。
+     * 注意：多值 values 语法并非所有数据库都支持，使用前需确认目标数据库兼容。
+     *
+     * @param list 实体集合
+     * @return 受影响行数
+     */
+    int batchInsert(@Param("list") Collection<T> list);
 
     /**
      * 按主键查询，返回 {@link Optional} 包装的实体（不存在时为 {@link Optional#empty()}）。
@@ -94,5 +106,20 @@ public interface CrudMapper<T extends Serializable, PK extends Serializable> {
     int softDeleteByPrimaryKey(@Param("deletedBy") Long deletedBy,
                                @Param("deletedAt") LocalDateTime deletedAt,
                                @Param("id") PK id);
+
+    /**
+     * 按主键集合批量软删除：将软删除标记列（默认 {@code is_deleted}）置为 1，同时更新 {@code deleted_by} 与 {@code deleted_at}。
+     * <p>
+     * 与 {@link #softDeleteByPrimaryKey} 相同，仅当表存在软删除标记列时才生成对应 SQL；
+     * {@code deletedAt} 传入 null 时使用数据库当前时间（{@code CURRENT_TIMESTAMP}）。
+     *
+     * @param deletedBy 删除人 id（更新值）
+     * @param deletedAt 删除时间，可为 null（更新值，此时用数据库当前时间）
+     * @param ids       主键集合（删除条件，{@code where 主键 in (...)}）
+     * @return 受影响行数
+     */
+    int batchSoftDeleteByIds(@Param("deletedBy") Long deletedBy,
+                             @Param("deletedAt") LocalDateTime deletedAt,
+                             @Param("ids") Collection<PK> ids);
 
 }

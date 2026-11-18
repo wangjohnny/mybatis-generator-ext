@@ -17,17 +17,20 @@ import org.mybatis.generator.api.dom.xml.XmlElement;
 /**
  * 软删除插件：为「含有软删除标记列」的表生成软删除相关 SQL。
  * <p>
- * 功能一 —— 软删除写操作：生成 {@code softDeleteByPrimaryKey} / {@code softDeleteByExample} 两个 update SQL，
+ * 功能一 —— 软删除写操作：生成 {@code softDeleteByPrimaryKey} / {@code batchSoftDeleteByIds} /
+ * {@code softDeleteByExample} 三个 update SQL，
  * 软删除时同时更新三列：
  * <ul>
  * <li>{@code is_deleted} 置 1（软删除标记）</li>
  * <li>{@code deleted_by} = 删除人 id（方法参数传入）</li>
  * <li>{@code deleted_at} = 删除时间（方法参数传入，为 null 时用数据库 {@code CURRENT_TIMESTAMP}）</li>
  * </ul>
- * 对应 {@link com.github.mybatis.mapper.CrudMapper#softDeleteByPrimaryKey} 与
- * {@link com.github.mybatis.mapper.GenericMapper#softDeleteByExample} 两个方法签名（更新值在前、条件在后）：
+ * 对应 {@link com.github.mybatis.mapper.CrudMapper#softDeleteByPrimaryKey}、
+ * {@link com.github.mybatis.mapper.CrudMapper#batchSoftDeleteByIds} 与
+ * {@link com.github.mybatis.mapper.GenericMapper#softDeleteByExample} 三个方法签名（更新值在前、条件在后）：
  * <ul>
  * <li>{@code int softDeleteByPrimaryKey(Long deletedBy, LocalDateTime deletedAt, PK id)} —— 按主键软删</li>
+ * <li>{@code int batchSoftDeleteByIds(Long deletedBy, LocalDateTime deletedAt, Collection<PK> ids)} —— 按主键集合批量软删</li>
  * <li>{@code int softDeleteByExample(Long deletedBy, LocalDateTime deletedAt, TE example)} —— 按条件批量软删</li>
  * </ul>
  * <p>
@@ -96,6 +99,9 @@ public class SoftDeletePlugin extends PluginAdapter {
 
     /** selectByPrimaryKey 的克隆方法名：查全部记录（含已删除），不加软删除过滤 */
     private static final String SELECT_BY_PRIMARY_KEY_RAW = "selectByPrimaryKeyRaw";
+
+    /** 按主键集合批量软删除方法名（与 CrudMapper.batchSoftDeleteByIds 一致） */
+    private static final String BATCH_SOFT_DELETE_BY_IDS = "batchSoftDeleteByIds";
 
     /**
      * 暂存每张表的 selectByPrimaryKey 未加软删除过滤前的克隆元素，供生成 selectByPrimaryKeyRaw 使用。
@@ -251,6 +257,9 @@ public class SoftDeletePlugin extends PluginAdapter {
         // 按主键软删
         root.addElement(buildSoftDeleteByPrimaryKeyElement(introspectedTable, softDeleteColumn));
 
+        // 按主键集合批量软删
+        root.addElement(buildSoftDeleteByIdsElement(introspectedTable, softDeleteColumn));
+
         // 按条件软删
         root.addElement(buildSoftDeleteByExampleElement(introspectedTable, softDeleteColumn));
 
@@ -365,6 +374,52 @@ public class SoftDeletePlugin extends PluginAdapter {
                     .append(pkColumn.getJdbcTypeName()).append("}");
         }
         update.addElement(new TextElement(sb.toString()));
+
+        return update;
+    }
+
+    /**
+     * 生成 {@code batchSoftDeleteByIds} 的 update 元素：
+     * update 表名 set is_deleted = 1, deleted_by = #{deletedBy}, deleted_at = &lt;动态&gt;
+     * where 主键 in (&lt;foreach ids&gt;)。按主键集合批量软删。
+     */
+    private XmlElement buildSoftDeleteByIdsElement(IntrospectedTable introspectedTable,
+            String softDeleteColumn) {
+        XmlElement update = new XmlElement("update");
+        update.addAttribute(new Attribute("id", BATCH_SOFT_DELETE_BY_IDS));
+        update.addAttribute(new Attribute("parameterType", "map"));
+
+        List<IntrospectedColumn> pkColumns = introspectedTable.getPrimaryKeyColumns();
+        String tableName = introspectedTable.getFullyQualifiedTableNameAtRuntime();
+
+        // update 表名 set is_deleted = 1, deleted_by = #{deletedBy},
+        update.addElement(new TextElement(
+                "update " + tableName + " set " + softDeleteColumn + " = " + DELETED_VALUE
+                        + ", " + DELETED_BY_COLUMN + " = #{deletedBy,jdbcType=BIGINT},"));
+
+        // deleted_at 动态列
+        update.addElement(buildDeletedAtChooseElement("deletedAt"));
+
+        // where 主键 in (...)
+        if (pkColumns.isEmpty()) {
+            // 理论上不会有主键为空的表，这里兜底防止生成不完整 SQL
+            update.addElement(new TextElement("where 1 = 0"));
+            return update;
+        }
+
+        IntrospectedColumn pkColumn = pkColumns.get(0);
+        update.addElement(new TextElement(
+                "where " + pkColumn.getActualColumnName() + " in"));
+
+        XmlElement foreach = new XmlElement("foreach");
+        foreach.addAttribute(new Attribute("collection", "ids"));
+        foreach.addAttribute(new Attribute("item", "item"));
+        foreach.addAttribute(new Attribute("open", "("));
+        foreach.addAttribute(new Attribute("separator", ","));
+        foreach.addAttribute(new Attribute("close", ")"));
+        foreach.addElement(new TextElement(
+                "#{item,jdbcType=" + pkColumn.getJdbcTypeName() + "}"));
+        update.addElement(foreach);
 
         return update;
     }
