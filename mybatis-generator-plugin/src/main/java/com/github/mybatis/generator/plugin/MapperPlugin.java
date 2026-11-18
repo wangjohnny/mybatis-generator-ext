@@ -44,12 +44,6 @@ public class MapperPlugin extends PluginAdapter {
      */
     private String baseModelNamePrefix;
 
-    /**
-     * Example 类的独立包名（与 ModelAndExampleBaseClassPlugin.exampleTargetPackage 保持一致）。
-     * 未配置时为 null，表示 Example 与 Model 同包（向后兼容）。
-     */
-    private String exampleTargetPackage;
-
     private String mapperSuperClass;
 
     public MapperPlugin() {
@@ -78,9 +72,6 @@ public class MapperPlugin extends PluginAdapter {
         if (!stringHasValue(baseModelNamePrefix)) {
             baseModelNamePrefix = ModelAndExampleBaseClassPlugin.DEFAULT_BASE_MODEL_NAME_PREFIX;
         }
-
-        // 与 ModelAndExampleBaseClassPlugin 保持一致的 exampleTargetPackage
-        exampleTargetPackage = properties.getProperty("exampleTargetPackage");
 
         return valid && valid2;
     }
@@ -163,7 +154,7 @@ public class MapperPlugin extends PluginAdapter {
             }
 
             String subModelType = getSubModelType(baseModelJavaType);
-            String subModelExampleType = getSubModelExampleType(subModelType);
+            String subModelExampleType = getSubModelExampleType(introspectedTable);
 
             System.out.println("shortName:" + shortName);
 
@@ -284,19 +275,35 @@ public class MapperPlugin extends PluginAdapter {
     }
 
     /**
-     * 根据 Model 子类的全限定名推导 Example 子类的全限定名。
+     * 根据 {@code introspectedTable.getExampleType()}（此时为 Base Example 全限定名）反推 Example 子类的全限定名。
      * <p>
-     * 若配置了独立的 exampleTargetPackage，则 Example 子类落在该独立包（与 Model 子类不同包）；
-     * 否则与 Model 子类同包（向后兼容），直接在类名后拼 Example。
+     * 不再依赖 {@code exampleTargetPackage} 配置（旧的 {@code getSubModelExampleType(subModelType)} 需要手工配
+     * 该 property，一旦漏配就会把 Example 推导到 Model 同包，导致 Mapper 接口的 import 路径错误）。
+     * 改为从 MBG 自身维护的 {@code getExampleType()} 反推：它天然与 ModelAndExampleBaseClassPlugin
+     * 计算的 Example 包结构一致（配了 exampleTargetPackage 时落在独立 example 包，否则与 Model 同包）。
+     * <p>
+     * Base Example 全限定名形如 {@code com.x.example.generated.BaseUserExample}（配了 exampleTargetPackage）
+     * 或 {@code com.x.model.generated.BaseUserExample}（未配），两者都是「目标包 + .generated + Base 前缀 + 类名」，
+     * 反推时去掉 {@code .generated} 与 {@code Base} 前缀即可得到子类名。
      *
-     * @param subModelType Model 子类全限定名，如 com.x.model.User
-     * @return Example 子类全限定名，如 com.x.example.UserExample 或 com.x.model.UserExample
+     * @param introspectedTable 当前表
+     * @return Example 子类全限定名，如 {@code com.x.example.UserExample}
      */
-    private String getSubModelExampleType(String subModelType) {
-        if (stringHasValue(exampleTargetPackage)) {
-            int indexOfLastDot = subModelType.lastIndexOf('.');
-            return exampleTargetPackage + "." + subModelType.substring(indexOfLastDot + 1) + "Example";
+    private String getSubModelExampleType(IntrospectedTable introspectedTable) {
+        String baseExampleType = introspectedTable.getExampleType();
+
+        // 取类名部分（去掉包前缀）
+        int lastDot = baseExampleType.lastIndexOf('.');
+        String shortName = baseExampleType.substring(lastDot + 1);
+        if (shortName.startsWith(baseModelNamePrefix)) {
+            shortName = shortName.substring(baseModelNamePrefix.length());
         }
-        return subModelType + "Example";
+
+        // 取目标包：去掉最后一层 .generated（Base 类所在的 generated 子包）
+        String generatedPackage = baseExampleType.substring(0, lastDot); // com.x.example.generated
+        int generatedDot = generatedPackage.lastIndexOf('.');
+        String targetPackage = generatedPackage.substring(0, generatedDot); // com.x.example
+
+        return targetPackage + "." + shortName;
     }
 }
