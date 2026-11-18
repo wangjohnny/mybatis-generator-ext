@@ -31,6 +31,10 @@ import org.mybatis.generator.api.dom.xml.XmlElement;
  * 软删除标记列名（{@code softDeleteColumn}）的三层优先级与 {@link SoftDeletePlugin} 完全一致：
  * table 级 → plugin 级 → 默认 {@code is_deleted}/{@code is_delete}；显式配置的字段名在表中不存在时报错中断，
  * 默认候选不存在时退化为普通查询（不加过滤）。
+ * <p>
+ * 依赖主键的方法（{@code selectByPrimaryKeys} / {@code deleteByPrimaryKeys} / {@code existsByPrimaryKey}）
+ * 仅对「有主键列」的表生成；无主键的表（如某些纯明细/关系表）跳过这三个方法，
+ * 但仍生成 {@code countAll} / {@code countRaw} / {@code selectOneByExample} / {@code existsByExample}。
  *
  * @author oking
  */
@@ -66,9 +70,16 @@ public class GenericMethodPlugin extends PluginAdapter {
         // 软删除列（无则 null，用于过滤开关）
         String softDeleteColumn = resolveSoftDeleteColumnName(introspectedTable);
 
-        root.addElement(buildSelectByPrimaryKeysElement(introspectedTable, softDeleteColumn));
-        root.addElement(buildDeleteByPrimaryKeysElement(introspectedTable));
-        root.addElement(buildExistsByPrimaryKeyElement(introspectedTable, softDeleteColumn));
+        // 按主键的方法（selectByPrimaryKeys/deleteByPrimaryKeys/existsByPrimaryKey）依赖主键列，
+        // 无主键的表（如某些纯关系/明细表）不生成这些方法，否则 getPrimaryKeyColumns().get(0) 会越界。
+        boolean hasPrimaryKey = introspectedTable.hasPrimaryKeyColumns();
+        if (hasPrimaryKey) {
+            root.addElement(buildSelectByPrimaryKeysElement(introspectedTable, softDeleteColumn));
+            root.addElement(buildDeleteByPrimaryKeysElement(introspectedTable));
+            root.addElement(buildExistsByPrimaryKeyElement(introspectedTable, softDeleteColumn));
+        }
+
+        // 不依赖主键的通用方法：所有表都生成
         root.addElement(buildCountAllElement(introspectedTable, softDeleteColumn));
         root.addElement(buildCountRawElement(introspectedTable));
         root.addElement(buildSelectOneByExampleElement(introspectedTable));
