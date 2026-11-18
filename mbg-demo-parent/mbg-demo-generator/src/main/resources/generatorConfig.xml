@@ -33,6 +33,8 @@
         </plugin>
         <plugin type="com.github.mybatis.generator.plugin.BatchOperationPlugin">
         </plugin>
+        <plugin type="com.github.mybatis.generator.plugin.GenericMethodPlugin">
+        </plugin>
         <plugin type="com.github.mybatis.generator.plugin.MapperPlugin">
             <property name="mapperTargetDir" value="${mapperTargetDir}"/>
             <property name="mapperTargetPackage" value="${mapperTargetPackage}"/>

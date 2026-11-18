@@ -2,6 +2,7 @@ package com.github.mybatis.mapper;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.ibatis.annotations.Param;
 
@@ -44,6 +45,24 @@ public interface GenericMapper<T extends Serializable, TE extends BaseModelExamp
      * @return 实体列表
      */
     List<T> selectByExample(TE example);
+
+    /**
+     * 按 example 条件查询单条记录，返回 {@link Optional} 包装的实体（不存在或命中多条时语义见实现）。
+     * <p>
+     * SQL 层追加 {@code limit 1}，仅取第一条匹配记录；含软删除标记列的表自动过滤已软删除记录。
+     *
+     * @param example 查询条件
+     * @return 实体，可能为空
+     */
+    Optional<T> selectOneByExample(TE example);
+
+    /**
+     * 按 example 条件判断是否存在匹配记录。含软删除标记列的表只判断「未删除」的记录。
+     *
+     * @param example 查询条件
+     * @return 存在返回 {@code true}，否则 {@code false}
+     */
+    boolean existsByExample(TE example);
 
     /**
      * 按 example 条件选择性更新：只更新 {@code record} 中非 null 字段。

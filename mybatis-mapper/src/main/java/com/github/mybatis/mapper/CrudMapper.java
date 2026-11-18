@@ -3,6 +3,7 @@ package com.github.mybatis.mapper;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import org.apache.ibatis.annotations.Param;
@@ -27,6 +28,14 @@ public interface CrudMapper<T extends Serializable, PK extends Serializable> {
      * @return 受影响行数
      */
     int deleteByPrimaryKey(PK id);
+
+    /**
+     * 按主键集合批量删除（物理删除）。
+     *
+     * @param ids 主键集合
+     * @return 受影响行数
+     */
+    int deleteByPrimaryKeys(@Param("ids") Collection<PK> ids);
 
     /**
      * 全量插入：所有字段（含 null）都会写入 insert 语句。
@@ -74,6 +83,29 @@ public interface CrudMapper<T extends Serializable, PK extends Serializable> {
      * @return 实体（含已删除），可能为空
      */
     Optional<T> selectByPrimaryKeyRaw(PK id);
+
+    /**
+     * 按主键集合批量查询。含软删除标记列的表会自动追加 {@code is_deleted = 0} 过滤已软删除的记录。
+     *
+     * @param ids 主键集合
+     * @return 实体列表（仅含未删除记录）
+     */
+    List<T> selectByPrimaryKeys(@Param("ids") Collection<PK> ids);
+
+    /**
+     * 判断主键对应的记录是否存在。含软删除标记列的表只判断「未删除」的记录。
+     *
+     * @param id 主键
+     * @return 存在返回 {@code true}，否则 {@code false}
+     */
+    boolean existsByPrimaryKey(PK id);
+
+    /**
+     * 统计全表行数。含软删除标记列的表只统计「未删除」的记录。
+     *
+     * @return 行数
+     */
+    long count();
 
     /**
      * 按主键选择性更新：只更新非 null 字段。
