@@ -22,7 +22,8 @@ import org.mybatis.generator.api.dom.xml.XmlElement;
  * <li>{@code selectByPrimaryKeys(Collection<PK> ids)} —— 按主键集合批量查询（含软删列时过滤已删除）</li>
  * <li>{@code deleteByPrimaryKeys(Collection<PK> ids)} —— 按主键集合物理删除（不做软删过滤）</li>
  * <li>{@code existsByPrimaryKey(PK id)} —— 判断主键是否存在（含软删列时只判未删除）</li>
- * <li>{@code count()} —— 统计全表行数（含软删列时只统计未删除）</li>
+ * <li>{@code countAll()} —— 统计全表行数（含软删列时只统计未删除）</li>
+ * <li>{@code countRaw()} —— 统计全表行数（含已软删除，不做过滤）</li>
  * <li>{@code selectOneByExample(TE example)} —— 按条件取单条（复用 Example_Where_Clause，自动带软删过滤）</li>
  * <li>{@code existsByExample(TE example)} —— 按条件判断是否存在（复用 Example_Where_Clause）</li>
  * </ul>
@@ -68,7 +69,8 @@ public class GenericMethodPlugin extends PluginAdapter {
         root.addElement(buildSelectByPrimaryKeysElement(introspectedTable, softDeleteColumn));
         root.addElement(buildDeleteByPrimaryKeysElement(introspectedTable));
         root.addElement(buildExistsByPrimaryKeyElement(introspectedTable, softDeleteColumn));
-        root.addElement(buildCountElement(introspectedTable, softDeleteColumn));
+        root.addElement(buildCountAllElement(introspectedTable, softDeleteColumn));
+        root.addElement(buildCountRawElement(introspectedTable));
         root.addElement(buildSelectOneByExampleElement(introspectedTable));
         root.addElement(buildExistsByExampleElement(introspectedTable));
 
@@ -196,11 +198,11 @@ public class GenericMethodPlugin extends PluginAdapter {
     }
 
     /**
-     * {@code count}：select count(*)，含软删列时加 where is_deleted=0。
+     * {@code countAll}：select count(*)，含软删列时加 where is_deleted=0（只统计未删除）。
      */
-    private XmlElement buildCountElement(IntrospectedTable introspectedTable, String softDeleteColumn) {
+    private XmlElement buildCountAllElement(IntrospectedTable introspectedTable, String softDeleteColumn) {
         XmlElement select = new XmlElement("select");
-        select.addAttribute(new Attribute("id", "count"));
+        select.addAttribute(new Attribute("id", "countAll"));
         select.addAttribute(new Attribute("resultType", "java.lang.Long"));
 
         StringBuilder sb = new StringBuilder("select count(*) from ")
@@ -209,6 +211,20 @@ public class GenericMethodPlugin extends PluginAdapter {
             sb.append(" where ").append(softDeleteColumn).append(" = ").append(NOT_DELETED_VALUE);
         }
         select.addElement(new TextElement(sb.toString()));
+
+        return select;
+    }
+
+    /**
+     * {@code countRaw}：select count(*)，不加软删除过滤（统计全部，含已删除）。
+     */
+    private XmlElement buildCountRawElement(IntrospectedTable introspectedTable) {
+        XmlElement select = new XmlElement("select");
+        select.addAttribute(new Attribute("id", "countRaw"));
+        select.addAttribute(new Attribute("resultType", "java.lang.Long"));
+
+        select.addElement(new TextElement("select count(*) from "
+                + introspectedTable.getAliasedFullyQualifiedTableNameAtRuntime()));
 
         return select;
     }

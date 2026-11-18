@@ -101,11 +101,25 @@ public interface CrudMapper<T extends Serializable, PK extends Serializable> {
     boolean existsByPrimaryKey(PK id);
 
     /**
-     * 统计全表行数。含软删除标记列的表只统计「未删除」的记录。
+     * 统计全表「有效记录」行数。含软删除标记列的表会自动追加 {@code is_deleted = 0}，只统计未删除的记录。
+     * <p>
+     * 从业务视角看，已软删除的记录已经"不存在"，因此本方法统计的就是业务上全部的有效记录；
+     * 绝大多数统计场景都应使用本方法。若确需统计含已删除记录的物理行数，请用 {@link #countRaw()}。
      *
-     * @return 行数
+     * @return 有效记录行数（仅含未删除记录）
      */
-    long count();
+    long countAll();
+
+    /**
+     * 统计全表「物理行数」（含已软删除记录），不做软删除过滤。
+     * <p>
+     * 与 {@link #countAll} 的区别：本方法统计数据库物理层全部行数（含 {@code is_deleted = 1} 的记录），
+     * 而 {@link #countAll} 只统计未删除的有效记录。不含软删除标记列时两者行为一致。
+     * 适用于数据审计、对账、回收站等需要触碰已删除数据的少数场景。
+     *
+     * @return 物理行数（含已删除记录）
+     */
+    long countRaw();
 
     /**
      * 按主键选择性更新：只更新非 null 字段。
